@@ -1,0 +1,24 @@
+---
+import DisenoPrincipal from "../layouts/DisenoPrincipal.astro";
+---
+<DisenoPrincipal title="Reservar cita" noindex>
+<section class="bg-white border rounded-lg p-4 max-w-4xl mx-auto space-y-4">
+<h1 class="text-2xl font-semibold">Reservar cita</h1>
+
+<p class="text-sm text-gray-600">Elige servicio, fecha y hora para reservar con <span id="booking-professional">nuestro profesional principal</span>. La cita queda confirmada al guardarla.</p>
+<div class="grid gap-4 sm:grid-cols-2">
+  <label>Servicio<select id="service-select" class="w-full border rounded px-3 py-2"><option value="">Cargando servicios...</option></select></label>
+  <label>Fecha<input id="date-select" type="date" class="w-full border rounded px-3 py-2" /></label>
+</div>
+<p class="text-xs text-gray-600">Horas en la zona de la barberia: <span id="booking-zone"></span>. Reservas hasta 30 dias de antelacion.</p>
+<p id="slots-msg" role="status" aria-live="polite" class="text-sm text-gray-600"></p>
+<div id="slots-list" class="grid gap-2 sm:grid-cols-3"></div>
+<div id="booking-success" class="hidden rounded border border-green-300 bg-green-50 p-3 text-sm">
+  <p id="booking-summary"></p><a href="/mis-citas" class="text-blue-700 underline">Ver mis citas</a>
+</div>
+<button id="booking-retry" type="button" hidden class="border rounded px-3 py-2">Reintentar la misma solicitud</button>
+
+</section>
+<script>import "../modulos/reservas/reservar-cita";</script>
+</DisenoPrincipal>
+

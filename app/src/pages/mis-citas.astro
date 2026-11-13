@@ -1,0 +1,33 @@
+---
+import DisenoPrincipal from "../layouts/DisenoPrincipal.astro";
+---
+
+<DisenoPrincipal title="Mis citas" noindex>
+  <section class="max-w-4xl mx-auto">
+    <div class="bg-white p-4 rounded shadow flex flex-col space-y-4">
+      <div class="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 class="font-semibold text-lg">Mis citas</h2>
+          <p class="text-xs text-gray-600">Revisa tus citas y, si todavia estas a tiempo, puedes cancelarlas desde aqui.</p>
+        </div>
+      </div>
+      <div class="grid gap-3 sm:grid-cols-2">
+        <label class="text-xs text-gray-600">Fecha
+          <input id="filter-date" type="date" class="mt-1 w-full rounded border px-2 py-2 text-sm" />
+        </label>
+        <label class="text-xs text-gray-600">Estado
+          <select id="filter-status" class="mt-1 w-full rounded border px-2 py-2 text-sm">
+            <option value="all">Todos</option>
+            <option value="confirmed">Confirmada</option>
+            <option value="done">Hecha</option>
+            <option value="cancelled">Cancelada</option>
+          </select>
+        </label>
+      </div>
+      <p id="my-msg" role="status" aria-live="polite" class="text-xs text-gray-600 min-h-[1.5rem] leading-tight"></p>
+      <div id="my-list" class="divide-y divide-gray-200 text-sm rounded border border-gray-200"></div>
+    </div>
+  </section>
+  <script>import "../modulos/reservas/mis-citas";</script>
+</DisenoPrincipal>
+

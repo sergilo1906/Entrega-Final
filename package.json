@@ -1,0 +1,26 @@
+{
+  "name": "barberpro-m13",
+  "version": "0.8.0",
+  "private": true,
+  "description": "Entrega Final M13 DAM - BarberPro Studio, reserves de barberia",
+  "engines": {
+    "node": ">=22.23.4",
+    "npm": ">=10"
+  },
+  "scripts": {
+    "dev": "npm --prefix app run dev",
+    "check": "npm --prefix app run check && npm --prefix functions run check",
+    "build": "npm --prefix app run build",
+    "test:unit": "npm --prefix app run test:unit && npm --prefix functions run test:unit",
+    "emulators": "node functions/scripts/emuladores-locales.mjs",
+    "datos:local": "node functions/scripts/preparar-demo-local.mjs",
+    "test:emuladores": "node functions/scripts/emuladores-locales.mjs --pruebas",
+    "test:e2e": "npm run test:emuladores",
+    "test": "npm run check && npm run test:unit && npm run test:emuladores",
+    "demo:web": "node functions/scripts/preparar-demo-web.mjs"
+  },
+  "devDependencies": {
+    "firebase-tools": "15.35.0",
+    "node": "22.23.4"
+  }
+}

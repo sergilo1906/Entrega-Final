@@ -1,0 +1,12 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Mantiene la preferencia de los controles nativos del proyecto de referencia. */
+:root {
+  color-scheme: light dark;
+}
+
+/* Una página estática nunca contiene datos privados; estos se cargan tras autorizar. */
+html[data-auth-pending] main { visibility: hidden; pointer-events: none; }
+html[data-auth-pending] [data-modal-private], html[data-auth-pending] #toast-root { visibility: hidden; pointer-events: none; }

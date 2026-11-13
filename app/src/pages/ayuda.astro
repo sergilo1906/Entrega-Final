@@ -1,0 +1,47 @@
+---
+import DisenoPrincipal from "../layouts/DisenoPrincipal.astro";
+
+const preguntasFrecuentes = [
+  { pregunta: "No veo horas disponibles.", respuesta: "Comprueba que el servicio siga activo, que el horario habitual este abierto y la fecha no este cerrada y que el hueco no este ocupado." },
+  { pregunta: "No puedo entrar a una ruta interna.", respuesta: "Si acabas de cambiar permisos, sal y vuelve a entrar para que la sesion cargue el cambio." },
+];
+---
+
+<DisenoPrincipal title="Ayuda">
+  <section class="max-w-4xl mx-auto space-y-4">
+    <header class="bg-white border rounded-lg p-6 space-y-2">
+      <h1 class="text-2xl font-semibold">Ayuda</h1>
+      <p class="text-sm text-gray-600">
+        Guia rapida para clientes y administracion. Si algo no cuadra, cierra sesion y vuelve a entrar.
+      </p>
+    </header>
+    <div class="grid gap-4 md:grid-cols-3">
+      <article class="bg-white border rounded-lg p-4 space-y-2">
+        <h2 class="font-semibold">Cliente</h2>
+        <p class="text-sm text-gray-600">Reserva desde <a href="/reservar" class="text-blue-700 underline">Reservar</a> y cancela citas futuras desde <a href="/mis-citas" class="text-blue-700 underline">Mis citas</a>.</p>
+      </article>
+      <article class="bg-white border rounded-lg p-4 space-y-2">
+        <h2 class="font-semibold">Horario</h2>
+        <p class="text-sm text-gray-600">Consulta el dia en <a href="/agenda" class="text-blue-700 underline">Agenda</a> y edita el horario habitual desde <a href="/horarios" class="text-blue-700 underline">Horarios</a>.</p>
+      </article>
+      <article class="bg-white border rounded-lg p-4 space-y-2">
+        <h2 class="font-semibold">Administracion</h2>
+        <p class="text-sm text-gray-600">Usa <a href="/admin" class="text-blue-700 underline">Administracion</a> para organizar los servicios y la agenda.</p>
+      </article>
+    </div>
+    <section class="bg-white border rounded-lg p-6 space-y-4">
+      <h2 class="text-lg font-semibold">Preguntas frecuentes</h2>
+      <div class="space-y-3 text-sm text-gray-700">
+        {
+          preguntasFrecuentes.map((pregunta) => (
+            <div>
+              <p class="font-medium text-gray-900">{pregunta.pregunta}</p>
+              <p>{pregunta.respuesta}</p>
+            </div>
+          ))
+        }
+      </div>
+    </section>
+  </section>
+</DisenoPrincipal>
+
