@@ -4,126 +4,77 @@ export function obtenerCodigoError(error: unknown): string {
     }
     return "";
 }
+// Convertim els errors d’accés en missatges que no revelen si un compte existeix.
 export function explicarErrorAcceso(error: unknown): string {
     const codigo = obtenerCodigoError(error);
     if (["auth/invalid-credential", "auth/wrong-password", "auth/user-not-found"].includes(codigo)) {
-        return "Email o contrasena incorrectos.";
+        return "El correu o la contrasenya no són correctes.";
     }
     if (codigo === "auth/email-already-in-use") {
-        return "Ese email ya esta en uso.";
+        return "Aquest correu ja està en ús.";
     }
     if (codigo === "auth/invalid-email") {
-        return "Email no valido.";
+        return "El correu no és vàlid.";
     }
     if (codigo === "auth/weak-password") {
-        return "La contrasena es demasiado debil.";
+        return "La contrasenya és massa feble.";
     }
     if (codigo === "auth/too-many-requests") {
-        return "Demasiados intentos. Espera un minuto y vuelve a probar.";
+        return "Massa intents. Espera un minut i torna-ho a provar.";
     }
     if (codigo === "auth/network-request-failed" || codigo === "unavailable") {
-        return "No se pudo conectar. Comprueba la conexion y vuelve a intentarlo.";
+        return "No s’ha pogut connectar. Comprova la connexió i torna-ho a provar.";
     }
     if (codigo === "auth/user-disabled" || codigo === "auth/user-token-expired" || codigo === "auth/invalid-user-token") {
-        return "La sesion ya no es valida. Vuelve a iniciar sesion.";
+        return "La sessió ja no és vàlida. Torna a iniciar sessió.";
     }
-    return "No se pudo completar la operacion. Vuelve a intentarlo.";
+    return "No s’ha pogut completar l’operació. Torna-ho a provar.";
 }
+// Expliquem què pot fer l’usuari si no arriba la verificació.
 export function explicarErrorVerificacion(error: unknown): string {
     if (obtenerCodigoError(error) === "auth/too-many-requests") {
-        return "Has pedido demasiados correos. Espera un minuto y vuelve a intentarlo.";
+        return "Has demanat massa correus. Espera un minut i torna-ho a provar.";
     }
-    return "No se pudo enviar el correo de verificacion. Prueba otra vez desde tu perfil.";
+    return "No s’ha pogut enviar el correu de verificació. Torna-ho a provar des del perfil.";
 }
+// Mostrem un error de reserva sense detalls interns del servidor.
 export function explicarErrorReserva(error: unknown): string {
     const codigo = obtenerCodigoError(error);
     if (codigo === "functions/already-exists") {
-        return "Ese horario ya no esta disponible. Selecciona otra hora.";
+        return "Aquesta hora ja no està disponible. Tria’n una altra.";
     }
     if (codigo === "functions/permission-denied" || codigo === "functions/unauthenticated") {
-        return "No tienes permiso para esta operacion. Revisa tu sesion y la verificacion del email.";
+        return "No tens permís per fer aquesta operació. Revisa la sessió i verifica el correu.";
     }
     if (codigo === "functions/not-found") {
-        return "La reserva no existe.";
+        return "La reserva no existeix.";
     }
     if (codigo === "functions/invalid-argument") {
-        return "Revisa el servicio, profesional, fecha y hora seleccionados.";
+        return "Revisa el servei, la data i l’hora seleccionats.";
     }
     if (codigo === "functions/failed-precondition") {
-        return "La seleccion ya no es valida. Revisa los datos y actualiza la disponibilidad.";
+        return "La selecció ja no és vàlida. Revisa les dades i actualitza la disponibilitat.";
     }
-    return "No se pudo confirmar la respuesta. Comprueba la reserva antes de volver a enviarla.";
+    return "No s’ha pogut confirmar la resposta. Revisa les teves cites o reintenta la mateixa sol·licitud.";
 }
+// Distingim un rebuig confirmat d’una resposta que no ha arribat.
 export function esRespuestaReservaIncierta(error: unknown): boolean {
     return !["functions/permission-denied", "functions/unauthenticated", "functions/not-found", "functions/already-exists", "functions/invalid-argument", "functions/failed-precondition", "functions/resource-exhausted"].includes(obtenerCodigoError(error));
 }
+// Expliquem els errors de gestió sense mostrar missatges tècnics.
 export function explicarErrorAdministracion(error: unknown): string {
     const codigo = obtenerCodigoError(error);
     if (codigo.includes("permission-denied") || codigo.includes("unauthenticated")) {
-        return "No tienes permiso para esta operacion. Revisa tu sesion.";
+        return "No tens permís per fer aquesta operació. Revisa la sessió.";
     }
     if (codigo.includes("invalid-argument")) {
-        return "Revisa los datos del formulario.";
+        return "Revisa les dades del formulari.";
     }
     if (codigo.includes("not-found")) {
-        return "El registro ya no existe. Vuelve a cargarlo.";
+        return "El registre ja no existeix. Torna a carregar les dades.";
     }
     if (codigo.includes("failed-precondition")) {
-        return "Los datos han cambiado o el cambio afecta a citas existentes. Recarga y revisa la configuracion.";
+        return "Les dades han canviat o el canvi afecta cites existents. Recarrega i revisa la configuració.";
     }
-    return "No se pudo confirmar la operacion. Comprueba el resultado antes de repetirla.";
-}
-export function explicarErrorCancelacion(error: unknown, margen: number): string {
-    const codigo = obtenerCodigoError(error);
-    if (codigo === "functions/permission-denied" || codigo === "functions/unauthenticated") {
-        return "Ahora mismo tu cuenta no puede cancelar esta cita.";
-    }
-    if (codigo === "functions/failed-precondition") {
-        return "La cita ya no admite cancelacion o no cumple el margen de " + margen + " h. Actualiza el listado.";
-    }
-    if (codigo === "functions/not-found") {
-        return "La reserva no existe. Actualiza el listado.";
-    }
-    return "No se pudo confirmar la cancelacion. Actualiza el listado antes de volver a intentarlo.";
-}
-export function explicarErrorCambioCita(error: unknown, margen: number): string {
-    const codigo = obtenerCodigoError(error);
-    if (codigo === "functions/permission-denied" || codigo === "functions/unauthenticated") {
-        return "Ahora mismo tu cuenta no puede cambiar esta cita.";
-    }
-    if (codigo === "functions/failed-precondition") {
-        return "La cita o la seleccion ya no admiten el cambio. Revisa el margen de " + margen + " h y actualiza el listado.";
-    }
-    if (codigo === "functions/already-exists") {
-        return "Ese hueco ya no esta libre.";
-    }
-    if (codigo === "functions/not-found") {
-        return "La reserva o el servicio ya no existen.";
-    }
-    if (codigo === "functions/invalid-argument") {
-        return "Revisa la nueva fecha y hora.";
-    }
-    return "No se pudo confirmar el cambio. Pulsa Comprobar cambio antes de iniciar otro.";
-}
-export function explicarErrorAgenda(error: unknown): string {
-    const codigo = obtenerCodigoError(error);
-    if (codigo.includes("permission-denied") || codigo.includes("unauthenticated")) {
-        return "No tienes permiso para esta operacion. Revisa tu sesion.";
-    }
-    if (codigo.includes("already-exists")) {
-        return "Hay un conflicto con una cita o un bloqueo existente. Actualiza los datos y revisa el intervalo.";
-    }
-    if (codigo.includes("failed-precondition")) {
-        return "Los datos han cambiado o el horario no permite conservar las citas existentes. Recarga y revisa la semana.";
-    }
-    if (codigo.includes("invalid-argument")) {
-        return "Revisa las fechas, horas y campos del formulario.";
-    }
-    if (codigo.includes("not-found")) {
-        return "El profesional o bloqueo ya no existe. Actualiza el listado.";
-    }
-    if (codigo.includes("resource-exhausted")) {
-        return "El intervalo es demasiado grande para esta operacion. Reduce las fechas.";
-    }
-    return "No se pudo confirmar la respuesta. Comprueba la operacion antes de volver a enviarla.";
+    return "No s’ha pogut confirmar l’operació. Comprova el resultat abans de repetir-la.";
 }

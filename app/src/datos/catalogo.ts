@@ -1,10 +1,11 @@
 import { collection, getDocs, query, where, orderBy } from "firebase/firestore";
 import { obtenerServiciosFirebase } from "./firebase";
 import type { Servicio, ServicioAdministrable } from "../modelos/agenda";
+// Carreguem els serveis actius amb una durada que es pugui reservar.
 export async function obtenerServicios(): Promise<Servicio[]> {
     const servicios = obtenerServiciosFirebase();
     if (!servicios) {
-        throw new Error("Firebase no configurado.");
+        throw new Error("Firebase no està configurat.");
     }
     const documentos = await getDocs(query(collection(servicios.baseDatos, "services"), where("active", "==", true)));
     const resultado: Servicio[] = [];
@@ -16,16 +17,17 @@ export async function obtenerServicios(): Promise<Servicio[]> {
             continue;
         }
         resultado.push({
-            id: documento.id, name: String(datos.name || "Servicio"), durationMin: duracion, price: precio
+            id: documento.id, name: String(datos.name || "Servei"), durationMin: duracion, price: precio
         });
     }
     resultado.sort((primero, segundo) => primero.name.localeCompare(segundo.name));
     return resultado;
 }
+// L’administrador pot consultar també els serveis inactius.
 export async function obtenerCatalogoCompleto(): Promise<ServicioAdministrable[]> {
     const servicios = obtenerServiciosFirebase();
     if (!servicios) {
-        throw new Error("Firebase no configurado.");
+        throw new Error("Firebase no està configurat.");
     }
     const documentos = await getDocs(query(collection(servicios.baseDatos, "services"), orderBy("name", "asc")));
     const resultado: ServicioAdministrable[] = [];

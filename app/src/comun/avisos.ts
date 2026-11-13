@@ -1,4 +1,5 @@
 import type { TipoAviso } from "../modelos/interfaz";
+// Mostrem un avís breu sense inserir HTML de l’usuari.
 export function mostrarAviso(mensaje: string, tipo: TipoAviso = "info"): void {
     let contenedor = document.getElementById("toast-root");
     if (!contenedor) {

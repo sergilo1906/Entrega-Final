@@ -11,6 +11,7 @@ export const cuentas = {
 };
 export const horario = () => Array.from({ length: 7 }, () => ({ active: true, ranges: [{ start: "09:00", end: "14:00" }, { start: "16:00", end: "20:00" }] }));
 export const fechaPrueba = (dias = 7) => sumarDiasCalendario(formatearFechaZona(new Date(), "Europe/Madrid").slice(0, 10), dias);
+// Creem comptes ficticis i dos rols antics per provar denegacions.
 export async function prepararCuentas() {
     comprobarEntornoLocal();
     for (const [nombre, uid] of Object.entries(cuentas)) {
@@ -30,9 +31,10 @@ export async function prepararCuentas() {
         });
     }
 }
+// Reiniciem exclusivament les dades dels emuladors per a cada prova.
 export async function prepararAgenda() {
     comprobarEntornoLocal();
-    // Borrado exclusivamente de datos ficticios en el proyecto demo y puertos fijos.
+    // Esborrem només dades fictícies dels emuladors amb projecte i ports fixos.
     for (const nombre of ["bookings", "bookingLocks", "closedDays", "services"]) {
         for (const documento of (await baseDatos.collection(nombre).get()).docs) {
             await documento.ref.delete();
@@ -56,6 +58,7 @@ export async function prepararAgenda() {
     }
 }
 let contador = 0;
+// Connectem el SDK client a Auth, Firestore i Functions locals.
 export async function conectarCuenta(nombre = "client") {
     const app = initializeApp({ projectId: "demo-barberpro-m13", apiKey: "demo-api-key" }, "prueba-" + (++contador));
     const auth = getAuth(app);

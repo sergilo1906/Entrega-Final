@@ -4,6 +4,7 @@ import type { EstadoSesion } from "../../modelos/cuentas";
 function mostrarElemento(selector: string, mostrar: boolean): void {
     document.querySelector(selector)?.classList.toggle("hidden", !mostrar);
 }
+// Adaptem els enllaços als permisos de la sessió actual.
 function actualizarNavegacion(estado: EstadoSesion): void {
     const autenticado = estado.estado === "autenticado";
     const usuario = estado.usuario;
@@ -44,13 +45,13 @@ if (botonSalir) {
         }
         cierreEnCurso = true;
         botonSalir.disabled = true;
-        botonSalir.textContent = "Saliendo...";
+        botonSalir.textContent = "Tancant la sessió…";
         try {
             await cerrarSesion();
             window.location.assign("/login");
         }
         catch {
-            botonSalir.textContent = "Reintentar salida";
+            botonSalir.textContent = "Torna a provar de sortir";
         }
         finally {
             cierreEnCurso = false;
@@ -63,7 +64,7 @@ protegerRutaActual();
 if (new URLSearchParams(location.search).get("acceso") === "denegado") {
     const aviso = document.getElementById("acceso-msg");
     if (aviso) {
-        aviso.textContent = "No tienes permiso para acceder a esta seccion.";
+        aviso.textContent = "No tens permís per accedir a aquesta secció.";
         aviso.hidden = false;
     }
 }

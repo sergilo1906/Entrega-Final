@@ -1,7 +1,7 @@
 import { obtenerServiciosAdministrativos, comprobarEntornoLocal } from "../src/firebase.js";
 import { asignarRolAutorizado } from "../src/cuentas.js";
 import { comprobarUid, normalizarRolEntrada } from "../src/permisos.js";
-// Herramienta privada de operador; nunca es una Function publica.
+// Eina privada de l’operador; no es publica com a Function.
 const argumentos = process.argv.slice(2);
 function leer(nombre) {
     const indice = argumentos.indexOf(nombre);

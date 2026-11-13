@@ -51,7 +51,8 @@ const raiz = fileURLToPath(new URL("../../", import.meta.url));
 const hash = texto => createHash("sha256").update(texto).digest("hex");
 export const uidCliente = clave => "m13-demo-client-" + clave;
 export const idCitaDemo = (uid, tipo) => hash(JSON.stringify([uid, "m13-demo-" + tipo]));
-// Las contraseñas se generan al ejecutar y se guardan fuera del proyecto, nunca en Git ni logs.
+// Generem contrasenyes aleatòries i les desem fora del projecte.
+// Llegim els accessos privats només d’un arxiu extern al projecte.
 function leerAccesos(archivo, proyecto) {
     const destino = path.resolve(archivo);
     if (!path.isAbsolute(archivo) || destino.toLowerCase().startsWith(path.resolve(raiz).toLowerCase() + path.sep)) {
@@ -67,7 +68,7 @@ function guardarAccesos(accesos) {
     fs.mkdirSync(path.dirname(accesos.destino), { recursive: true });
     fs.writeFileSync(accesos.destino, JSON.stringify(accesos.datos, null, 2) + "\n", { mode: 0o600 });
 }
-// Solo gestionamos identificadores reservados de demo y nunca reutilizamos usuarios reales.
+// Preparem només comptes demo, sense reutilitzar usuaris reals.
 async function prepararCuenta(persona, rol, accesos) {
     const { autenticacion, baseDatos } = obtenerServiciosAdministrativos();
     const uid = rol === "client" ? uidCliente(persona.clave) : "m13-demo-admin-" + persona.clave;
@@ -119,7 +120,7 @@ async function prepararCuenta(persona, rol, accesos) {
         usuario: await autenticacion.getUser(uid), rol, version
     };
 }
-// El horario existente se conserva. Solo un entorno nuevo recibe el horario de ejemplo.
+// Conservem l’horari existent; només creem el de mostra si encara no n’hi ha.
 async function prepararCatalogoYHorario() {
     const { baseDatos } = obtenerServiciosAdministrativos();
     const referencia = baseDatos.doc("config/app");
@@ -145,7 +146,7 @@ async function prepararCatalogoYHorario() {
         }
     }
 }
-// Elegimos horas con el mismo motor del backend. Para el historial exigimos fin en el pasado.
+// Busquem hores amb el motor del servidor. L’historial ha d’haver acabat.
 async function buscarHueco(serviceId, pasado = false) {
     const { baseDatos } = obtenerServiciosAdministrativos();
     const config = await obtenerConfiguracionAgenda();
@@ -166,7 +167,7 @@ async function buscarHueco(serviceId, pasado = false) {
             }
             throw error;
         }
-        // Las canceladas siguen libres para el cliente; la muestra evita repetir sus horas al prepararse.
+        // Les cancel·lades deixen l’hora lliure; evitem repetir-les a la mostra.
         const canceladas = await baseDatos.collection("bookings").where("dateStr", "==", fecha).get();
         for (const documento of canceladas.docs) {
             const cita = documento.data();
@@ -185,7 +186,7 @@ async function buscarHueco(serviceId, pasado = false) {
     }
     throw new Error("No hay huecos validos para preparar la demostracion; revisa horario, cierres y datos antiguos.");
 }
-// Las citas futuras usan crearReserva y cambiarEstado, como la aplicacion real.
+// Preparem les cites futures amb les mateixes operacions de l’aplicació.
 async function prepararCitaFutura(identidad, servicio, tipo, cancelar = false) {
     const { baseDatos } = obtenerServiciosAdministrativos();
     const id = idCitaDemo(identidad.usuario.uid, tipo);
@@ -206,8 +207,7 @@ async function prepararCitaFutura(identidad, servicio, tipo, cancelar = false) {
         await cambiarEstado(identidad, { bookingId: id }, "cancelled");
     }
 }
-// El backend no permite reservar en el pasado. Solo este operador crea historial terminado,
-// comprobando dentro de la transaccion horario, cierre, servicio, ocupacion y todos los locks.
+// Només l’operador crea l’historial passat, comprovant horari, servei i ocupació.
 async function prepararHistorial(identidad, servicio) {
     const { baseDatos } = obtenerServiciosAdministrativos();
     const id = idCitaDemo(identidad.usuario.uid, "historial");
@@ -260,6 +260,7 @@ async function prepararHistorial(identidad, servicio) {
         actualizarControlAgenda(transaccion, baseDatos, config);
     });
 }
+// Preparem una mostra identificable sense duplicar ni reiniciar cites existents.
 export async function prepararDemostracion({ real = false, adminUid = "", archivoAccesos }) {
     if (!real) {
         comprobarEntornoLocal();
@@ -310,10 +311,36 @@ export async function prepararDemostracion({ real = false, adminUid = "", archiv
         fechas.add(fecha);
         citasPorFecha[fecha] = (citasPorFecha[fecha] || 0) + 1;
     }
+    await prepararCierres([...fechas].sort().at(-1));
     guardarAccesos(accesos);
     const resumen = {
         proyecto, modo: real ? "WEB" : "LOCAL", clientes: 6, administradoresDemo: real ? 0 : 6, administradorInicial: real ? adminUid : null, profesional: "Marc Vidal", servicios: 6, citas: citas.size, estados, fechas: [...fechas].sort(), citasPorFecha, archivoAccesos: accesos.destino
     };
     console.log(JSON.stringify(resumen, null, 2));
     return resumen;
+}
+// Afegim dos dies tancats de mostra una sola vegada, sense tocar cites ni reobertures.
+async function prepararCierres(ultimaFecha) {
+    const { baseDatos } = obtenerServiciosAdministrativos();
+    await baseDatos.runTransaction(async transaccion => {
+        const configuracion = await obtenerConfiguracionAgenda(transaccion);
+        const referencia = baseDatos.doc("config/app");
+        if ((await transaccion.get(referencia)).get("demoClosedDates")) {
+            return;
+        }
+        const fechas = [];
+        for (const dias of [7, 14]) {
+            const fecha = sumarDiasCalendario(ultimaFecha, dias);
+            const cierre = await transaccion.get(baseDatos.doc("closedDays/" + fecha));
+            const citas = await transaccion.get(baseDatos.collection("bookings").where("dateStr", "==", fecha));
+            if (!cierre.exists && citas.empty) {
+                fechas.push(fecha);
+            }
+        }
+        for (const fecha of fechas) {
+            transaccion.create(baseDatos.doc("closedDays/" + fecha), { dateStr: fecha, demoTag: MARCA_DEMO });
+        }
+        transaccion.update(referencia, { demoClosedDates: fechas });
+        actualizarControlAgenda(transaccion, baseDatos, configuracion);
+    });
 }

@@ -10,19 +10,20 @@ export function formatearFechaZona(instante, zona) {
     }
     return valores.year + "-" + valores.month + "-" + valores.day + "T" + valores.hour + ":" + valores.minute;
 }
+// Rebutgem dates amb format correcte que no existeixen al calendari.
 export function validarFechaCalendario(fecha) {
     if (typeof fecha !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
-        throw new HttpsError("invalid-argument", "Fecha no valida.");
+        throw new HttpsError("invalid-argument", "La data no és vàlida.");
     }
     const instante = new Date(fecha + "T00:00:00Z");
     if (!Number.isFinite(instante.getTime()) || instante.toISOString().slice(0, 10) !== fecha) {
-        throw new HttpsError("invalid-argument", "La fecha no existe en el calendario.");
+        throw new HttpsError("invalid-argument", "La data no existeix al calendari.");
     }
     return fecha;
 }
 export function validarHora(hora) {
     if (typeof hora !== "string" || !/^([01]\d|2[0-3]):[0-5]\d$/.test(hora)) {
-        throw new HttpsError("invalid-argument", "Hora no valida.");
+        throw new HttpsError("invalid-argument", "L’hora no és vàlida.");
     }
     return hora;
 }
@@ -48,28 +49,30 @@ export function convertirAFechaUtc(fecha, hora, zona) {
     validarFechaCalendario(fecha);
     validarHora(hora);
     const instante = fromZonedTime(fecha + "T" + hora + ":00", zona);
-    // La vuelta a la zona IANA detecta horas inexistentes durante el salto de primavera.
+    // Tornem a l’hora local per detectar hores inexistents del canvi de primavera.
     if (!Number.isFinite(instante.getTime()) || formatearFechaZona(instante, zona) !== fecha + "T" + hora) {
-        throw new HttpsError("failed-precondition", "La hora no existe en la zona horaria del negocio.");
+        throw new HttpsError("failed-precondition", "L’hora no existeix a la zona horària de la barberia.");
     }
     return instante;
 }
+// Convertim la cita a UTC i descartem canvis d’hora o de dia.
 export function obtenerIntervaloUtc(fecha, hora, duracion, zona) {
     const inicio = convertirAFechaUtc(fecha, hora, zona);
     const fin = new Date(inicio.getTime() + duracion * 60000);
     const minutosFin = convertirHoraAMinutos(hora) + duracion;
-    // Un contrato HH:mm no distingue las dos repeticiones de una hora. Se usa siempre
-    // la conversión canónica de la librería y se excluyen intervalos que cruzan el cambio.
+    // HH:mm no distingeix una hora repetida. Fem servir la conversió de la llibreria
+    // i descartem intervals que travessen el canvi d’hora.
     if (minutosFin >= 1440 || formatearFechaZona(fin, zona) !== fecha + "T" + convertirMinutosAHora(minutosFin)) {
-        throw new HttpsError("failed-precondition", "El intervalo cruza un cambio de hora o de dia.");
+        throw new HttpsError("failed-precondition", "L’interval travessa un canvi d’hora o de dia.");
     }
     return { inicio, fin };
 }
+// Limitem les reserves a trenta dies segons el dia de la barberia.
 export function comprobarAnticipacion(fecha, zona, ahora = new Date()) {
     const hoy = formatearFechaZona(ahora, zona).slice(0, 10);
     const limite = new Date(hoy + "T00:00:00Z");
     limite.setUTCDate(limite.getUTCDate() + 30);
     if (fecha > limite.toISOString().slice(0, 10)) {
-        throw new HttpsError("failed-precondition", "Solo se puede reservar con 30 dias de antelacion.");
+        throw new HttpsError("failed-precondition", "Només es pot reservar amb 30 dies d’antelació.");
     }
 }

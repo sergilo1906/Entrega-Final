@@ -2,35 +2,35 @@
 import DisenoPrincipal from "../layouts/DisenoPrincipal.astro";
 
 const preguntasFrecuentes = [
-  { pregunta: "No veo horas disponibles.", respuesta: "Comprueba que el servicio siga activo, que el horario habitual este abierto y la fecha no este cerrada y que el hueco no este ocupado." },
-  { pregunta: "No puedo entrar a una ruta interna.", respuesta: "Si acabas de cambiar permisos, sal y vuelve a entrar para que la sesion cargue el cambio." },
+  { pregunta: "No veig hores disponibles.", respuesta: "Comprova que el servei estigui actiu, que hi hagi horari obert i que la data i l’hora estiguin disponibles." },
+  { pregunta: "No puc entrar a una secció interna.", respuesta: "Si t’acaben de canviar els permisos, surt i torna a entrar perquè la sessió carregui el canvi." },
 ];
 ---
 
-<DisenoPrincipal title="Ayuda">
+<DisenoPrincipal title="Ajuda">
   <section class="max-w-4xl mx-auto space-y-4">
     <header class="bg-white border rounded-lg p-6 space-y-2">
-      <h1 class="text-2xl font-semibold">Ayuda</h1>
+      <h1 class="text-2xl font-semibold">Ajuda</h1>
       <p class="text-sm text-gray-600">
-        Guia rapida para clientes y administracion. Si algo no cuadra, cierra sesion y vuelve a entrar.
+        Guia ràpida per a clients i administració. Si alguna cosa no quadra, tanca la sessió i torna a entrar.
       </p>
     </header>
     <div class="grid gap-4 md:grid-cols-3">
       <article class="bg-white border rounded-lg p-4 space-y-2">
-        <h2 class="font-semibold">Cliente</h2>
-        <p class="text-sm text-gray-600">Reserva desde <a href="/reservar" class="text-blue-700 underline">Reservar</a> y cancela citas futuras desde <a href="/mis-citas" class="text-blue-700 underline">Mis citas</a>.</p>
+        <h2 class="font-semibold">Client</h2>
+        <p class="text-sm text-gray-600">Reserva des de <a href="/reservar" class="text-blue-700 underline">Reserva</a> i cancel·la cites futures des de <a href="/mis-citas" class="text-blue-700 underline">Les meves cites</a>.</p>
       </article>
       <article class="bg-white border rounded-lg p-4 space-y-2">
-        <h2 class="font-semibold">Horario</h2>
-        <p class="text-sm text-gray-600">Consulta el dia en <a href="/agenda" class="text-blue-700 underline">Agenda</a> y edita el horario habitual desde <a href="/horarios" class="text-blue-700 underline">Horarios</a>.</p>
+        <h2 class="font-semibold">Horari</h2>
+        <p class="text-sm text-gray-600">Consulta el dia a <a href="/agenda" class="text-blue-700 underline">Agenda</a> i edita l’horari habitual des de <a href="/horarios" class="text-blue-700 underline">Horari</a>.</p>
       </article>
       <article class="bg-white border rounded-lg p-4 space-y-2">
-        <h2 class="font-semibold">Administracion</h2>
-        <p class="text-sm text-gray-600">Usa <a href="/admin" class="text-blue-700 underline">Administracion</a> para organizar los servicios y la agenda.</p>
+        <h2 class="font-semibold">Administració</h2>
+        <p class="text-sm text-gray-600">Fes servir <a href="/admin" class="text-blue-700 underline">Administració</a> per organitzar els serveis i l’agenda.</p>
       </article>
     </div>
     <section class="bg-white border rounded-lg p-6 space-y-4">
-      <h2 class="text-lg font-semibold">Preguntas frecuentes</h2>
+      <h2 class="text-lg font-semibold">Preguntes freqüents</h2>
       <div class="space-y-3 text-sm text-gray-700">
         {
           preguntasFrecuentes.map((pregunta) => (

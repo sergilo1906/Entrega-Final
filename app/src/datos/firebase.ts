@@ -18,7 +18,7 @@ let servicios: {
     baseDatos: Firestore;
     funcionesRemotas: Functions;
 } | null = null;
-// Leemos la configuracion publica al compilar; no contiene claves administrativas.
+// Llegim la configuració pública en compilar, sense claus administratives.
 export function leerConfiguracionFirebase(): ConfiguracionFirebase {
     return {
         modo: import.meta.env.PUBLIC_FIREBASE_MODE || "desactivado",
@@ -31,41 +31,41 @@ export function leerConfiguracionFirebase(): ConfiguracionFirebase {
         appUrl: import.meta.env.PUBLIC_APP_URL || "",
     };
 }
-// Impedimos mezclar el proyecto ficticio local con una conexion WEB real.
+// Evitem barrejar els emuladors amb el projecte WEB real.
 export function comprobarConfiguracionFirebase(config: ConfiguracionFirebase, origen: string): string | null {
     if (!config.apiKey || !config.appId || !config.projectId || !config.authDomain) {
-        return "Configuracion Firebase incompleta.";
+        return "La configuració de Firebase és incompleta.";
     }
     let url: URL;
     try {
         url = new URL(origen);
     }
     catch {
-        return "Origen no valido.";
+        return "L’origen no és vàlid.";
     }
     if (config.modo === "local") {
         if (!config.usarEmuladores || !config.usarEmuladorFunciones || !["localhost", "127.0.0.1"].includes(url.hostname)
             || config.projectId !== "demo-barberpro-m13" || config.authDomain !== "localhost") {
-            return "Modo local: solo localhost, emuladores y proyecto ficticio.";
+            return "El mode local requereix localhost, emuladors i el projecte fictici.";
         }
         return null;
     }
     if (config.modo !== "web" || config.usarEmuladores || config.usarEmuladorFunciones || url.protocol !== "https:"
         || config.projectId.startsWith("demo-") || config.authDomain !== config.projectId + ".firebaseapp.com") {
-        return "Configuracion WEB no valida.";
+        return "La configuració WEB no és vàlida.";
     }
     try {
         const canonica = new URL(config.appUrl);
         if (canonica.protocol !== "https:" || canonica.origin !== url.origin || canonica.pathname !== "/") {
-            return "El origen no coincide con PUBLIC_APP_URL.";
+            return "L’origen no coincideix amb PUBLIC_APP_URL.";
         }
     }
     catch {
-        return "Falta PUBLIC_APP_URL HTTPS.";
+        return "Falta PUBLIC_APP_URL amb HTTPS.";
     }
     return null;
 }
-// Creamos los SDK una sola vez y conectamos los emuladores antes de usarlos.
+// Creem els SDK una sola vegada i connectem els emuladors abans d’usar-los.
 export function obtenerServiciosFirebase() {
     const config = leerConfiguracionFirebase();
     if (config.modo === "desactivado") {

@@ -4,24 +4,23 @@ import { validarHorario } from "./horarios.js";
 export const UID_PROFESIONAL = "principal";
 export function validarZona(timezone) {
     if (typeof timezone !== "string" || !timezone.trim()) {
-        throw new HttpsError("invalid-argument", "Indica la zona horaria.");
+        throw new HttpsError("invalid-argument", "Indica la zona horària.");
     }
     try {
         new Intl.DateTimeFormat("es", { timeZone: timezone }).format();
     }
     catch {
-        throw new HttpsError("invalid-argument", "Zona horaria no valida.");
+        throw new HttpsError("invalid-argument", "La zona horària no és vàlida.");
     }
     return timezone;
 }
-// El horario habitual se guarda una sola vez y se aplica a todas las semanas.
-// El horario es unico y habitual; un dato antiguo incompatible requiere revision.
+// L’horari habitual es repeteix cada setmana.
 export async function obtenerConfiguracionAgenda(transaccion = null) {
     const { baseDatos } = obtenerServiciosAdministrativos();
     const referencia = baseDatos.doc("config/app");
     const documento = transaccion ? await transaccion.get(referencia) : await referencia.get();
     if (!documento.exists) {
-        throw new HttpsError("failed-precondition", "El administrador debe configurar el horario.");
+        throw new HttpsError("failed-precondition", "L’administrador ha de configurar l’horari.");
     }
     return {
         timezone: validarZona(documento.get("timezone")),
@@ -29,8 +28,7 @@ export async function obtenerConfiguracionAgenda(transaccion = null) {
         revision: Number(documento.get("revision") || 0),
     };
 }
-// Todas las operaciones de agenda comparten este control. Un cambio concurrente obliga a releer.
-// Este documento hace que reservas, cierres y cambios de horario detecten sus carreras.
+// El control compartit fa repetir la transacció si l’agenda ha canviat.
 export function actualizarControlAgenda(transaccion, baseDatos, configuracion) {
     transaccion.update(baseDatos.doc("config/app"), { revision: configuracion.revision + 1 });
 }

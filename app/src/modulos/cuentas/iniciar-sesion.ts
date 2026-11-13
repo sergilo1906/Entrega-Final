@@ -17,7 +17,7 @@ observarSesion((estado) => {
         mensaje.textContent = estado.mensaje;
     }
     else if (new URLSearchParams(location.search).get("verified") === "1") {
-        mensaje.textContent = "Email verificado. Ya puedes iniciar sesion.";
+        mensaje.textContent = "Correu verificat. Ja pots iniciar sessió.";
     }
 });
 formulario?.addEventListener("submit", async (evento) => {
@@ -35,12 +35,12 @@ formulario?.addEventListener("submit", async (evento) => {
     }
     solicitudEnCurso = true;
     bloquearFormulario(formulario, true);
-    mensaje.textContent = "Entrando...";
+    mensaje.textContent = "Iniciant la sessió…";
     try {
         await iniciarSesion(correo, contrasena);
         const estado = await esperarEstadoSesion();
         if (!estado.usuario) {
-            throw new Error("No se pudo comprobar la sesion.");
+            throw new Error("No s’ha pogut comprovar la sessió.");
         }
         window.location.replace(estado.usuario.correoVerificado ? obtenerDestinoInicial(estado.usuario.rol) : "/verify");
     }

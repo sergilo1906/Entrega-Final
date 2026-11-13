@@ -2,26 +2,27 @@
 import DisenoPrincipal from "../layouts/DisenoPrincipal.astro";
 ---
 
-<DisenoPrincipal title="Iniciar sesion" noindex>
+<DisenoPrincipal title="Inicia sessió" noindex>
   <form id="login-form" class="max-w-sm mx-auto bg-white p-4 rounded shadow text-sm space-y-4 opacity-50 pointer-events-none">
+    <h1 class="text-xl font-semibold">Inicia sessió</h1>
     <div>
-      <label for="login-email" class="block text-xs text-gray-600 mb-1">Email</label>
+      <label for="login-email" class="block text-xs text-gray-600 mb-1">Correu electrònic</label>
       <input id="login-email" name="email" type="email" autocomplete="email" required class="w-full border rounded px-3 py-2" />
     </div>
 
     <div>
-      <label for="login-password" class="block text-xs text-gray-600 mb-1">Contrasena</label>
+      <label for="login-password" class="block text-xs text-gray-600 mb-1">Contrasenya</label>
       <input id="login-password" name="password" type="password" autocomplete="current-password" required minlength="6" class="w-full border rounded px-3 py-2" />
     </div>
 
     <button class="w-full bg-blue-600 text-white rounded py-2 font-medium hover:bg-blue-700 focus:outline-none focus:ring focus:ring-blue-300">
-      Entrar
+      Inicia sessió
     </button>
 
     <p id="login-msg" role="status" aria-live="polite" class="text-xs text-gray-600 min-h-[1.5rem] leading-tight"></p>
 
     <p class="text-xs text-center text-gray-600">
-      No tienes cuenta? <a href="/registro" class="text-blue-600 hover:underline">Crear cuenta</a>
+      No tens compte? <a href="/registro" class="text-blue-600 hover:underline">Crea un compte</a>
     </p>
   </form>
 

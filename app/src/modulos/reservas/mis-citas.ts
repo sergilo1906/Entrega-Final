@@ -4,8 +4,9 @@ import { cancelarReserva, completarReserva } from "../../datos/funciones-remotas
 import { obtenerConfiguracionAgenda } from "../../datos/configuracion";
 import { formatearFechaNegocio, obtenerInicioCita } from "../../comun/fechas";
 import { obtenerEtiquetaEstadoCliente } from "../../comun/estados-cita";
+import { explicarErrorAdministracion } from "../../comun/errores";
 import type { Cita } from "../../modelos/agenda";
-// Mis citas y Agenda comparten solo la presentacion y las acciones basicas.
+// Les meves cites i Agenda comparteixen el llistat i les accions bàsiques.
 export function iniciarListado(administrador: boolean): void {
     const lista = document.getElementById(administrador ? "agenda-list" : "my-list")!;
     const mensaje = document.getElementById(administrador ? "agenda-msg" : "my-msg")!;
@@ -17,18 +18,18 @@ export function iniciarListado(administrador: boolean): void {
     let citas: Cita[] = [];
     let procesando = false;
     fecha.disabled = true;
-    // Mostramos solo los datos del listado autorizado y acciones validas para su estado.
+    // Mostrem les cites autoritzades i les accions que permet el seu estat.
     function pintar() {
         lista.replaceChildren();
         const visibles = citas.filter(cita => (!fecha.value || cita.dateStr === fecha.value) && (estado.value === "all" || cita.status === estado.value));
-        mensaje.textContent = visibles.length ? "" : "No hay citas con estos filtros.";
+        mensaje.textContent = visibles.length ? "" : "No hi ha cites amb aquests filtres.";
         for (const cita of visibles) {
             const tarjeta = document.createElement("article");
             tarjeta.className = "p-3 space-y-2";
             tarjeta.dataset.bookingId = cita.id;
             const titulo = document.createElement("h3");
             titulo.className = "font-semibold";
-            titulo.textContent = cita.dateStr + " · " + cita.timeStr + " · " + (cita.serviceSnapshot?.name || "Servicio historico");
+            titulo.textContent = cita.dateStr + " · " + cita.timeStr + " · " + (cita.serviceSnapshot?.name || "Servei històric");
             const datos = document.createElement("p");
             datos.textContent = obtenerEtiquetaEstadoCliente(cita.status) + " · " + cita.durationMin + " min · " + (cita.serviceSnapshot?.price ?? "—") + " EUR";
             tarjeta.append(titulo, datos);
@@ -39,10 +40,10 @@ export function iniciarListado(administrador: boolean): void {
             }
             if (cita.status === "confirmed") {
                 if (administrador) {
-                    accion("Marcar hecha", () => completarReserva(cita.id));
+                    accion("Marca com a completada", () => completarReserva(cita.id));
                 }
                 if (administrador || obtenerInicioCita(cita, zona).getTime() > Date.now()) {
-                    accion("Cancelar cita", () => cancelarReserva(cita.id));
+                    accion("Cancel·la la cita", () => cancelarReserva(cita.id));
                 }
             }
             function accion(texto: string, ejecutar: () => Promise<unknown>) {
@@ -66,7 +67,7 @@ export function iniciarListado(administrador: boolean): void {
                     }
                     catch (error) {
                         if (actual.esVigente()) {
-                            mensaje.textContent = error instanceof Error ? error.message : "No se pudo guardar el cambio.";
+                            mensaje.textContent = explicarErrorAdministracion(error);
                         }
                     }
                     finally {
@@ -83,14 +84,14 @@ export function iniciarListado(administrador: boolean): void {
             lista.append(tarjeta);
         }
     }
-    // La consulta del cliente siempre filtra por su UID; la agenda requiere administrador.
+    // El client consulta només el seu UID; l’agenda demana administrador.
     async function cargar() {
         const actual = contexto;
         const consulta = ++revision;
         if (!actual?.esVigente()) {
             return;
         }
-        mensaje.textContent = "Cargando citas...";
+        mensaje.textContent = "Carregant les cites…";
         lista.replaceChildren();
         try {
             const resultado = administrador ? await obtenerCitasDia(fecha.value) : await obtenerCitasUsuario(actual.usuario.uid);
@@ -102,7 +103,7 @@ export function iniciarListado(administrador: boolean): void {
         }
         catch (error) {
             if (actual.esVigente() && consulta === revision) {
-                mensaje.textContent = error instanceof Error ? error.message : "No se pudieron cargar las citas.";
+                mensaje.textContent = explicarErrorAdministracion(error);
             }
         }
     }
@@ -132,7 +133,7 @@ export function iniciarListado(administrador: boolean): void {
             }
             catch (error) {
                 if (actual.esVigente()) {
-                    mensaje.textContent = error instanceof Error ? error.message : "No se pudo leer el horario.";
+                    mensaje.textContent = explicarErrorAdministracion(error);
                 }
             }
         })();

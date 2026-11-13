@@ -31,6 +31,12 @@ test("demo catalana: doce citas coherentes, doce cuentas locales, aislamiento y 
         assert.equal(new Set(cuentas.map(c => c.password)).size, 12);
         const configuracion = (await baseDatos.doc("config/app").get()).data();
         assert.equal(configuracion.professionalName, "Marc Vidal");
+        assert.equal(configuracion.demoClosedDates.length, 2);
+        assert.equal((await baseDatos.collection("closedDays").get()).size, 2);
+        const reapertura = configuracion.demoClosedDates[0];
+        await baseDatos.doc("closedDays/" + reapertura).delete();
+        await prepararDemostracion({ archivoAccesos });
+        assert.equal((await baseDatos.doc("closedDays/" + reapertura).get()).exists, false);
         for (const servicio of SERVICIOS) {
             const actual = (await baseDatos.doc("services/" + servicio.id).get()).data();
             assert.equal(actual.name, servicio.name);

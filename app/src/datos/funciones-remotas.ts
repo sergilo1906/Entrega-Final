@@ -2,10 +2,11 @@ import { httpsCallable } from "firebase/functions";
 import { obtenerServiciosFirebase } from "./firebase";
 import type { HuecoDisponible, SolicitudReserva, ResultadoReserva, ServicioAdministrable } from "../modelos/agenda";
 import type { ConfiguracionAgenda } from "../modelos/aplicacion";
+// Enviem la petició a la Function amb la sessió del SDK.
 async function llamar<Entrada, Salida>(nombre: string, datos: Entrada): Promise<Salida> {
     const servicios = obtenerServiciosFirebase();
     if (!servicios) {
-        throw new Error("Firebase no configurado.");
+        throw new Error("Firebase no està configurat.");
     }
     return (await httpsCallable<Entrada, Salida>(servicios.funcionesRemotas, nombre)(datos)).data;
 }

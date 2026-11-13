@@ -3,6 +3,7 @@ import { obtenerServicios } from "../../datos/catalogo";
 import { obtenerConfiguracionAgenda } from "../../datos/configuracion";
 import { consultarDisponibilidad, solicitarReserva } from "../../datos/funciones-remotas";
 import { formatearFechaNegocio, sumarDiasCalendario } from "../../comun/fechas";
+import { explicarErrorReserva, esRespuestaReservaIncierta } from "../../comun/errores";
 import type { SolicitudReserva } from "../../modelos/agenda";
 const servicio = document.querySelector<HTMLSelectElement>("#service-select")!;
 const fecha = document.querySelector<HTMLInputElement>("#date-select")!;
@@ -27,19 +28,20 @@ function guardarPendiente() {
             sessionStorage.removeItem(clave());
         }
     }
-    catch { /* Se conserva en memoria. */
+    catch { /* La sol·licitud es conserva en memòria. */
     }
 }
 function bloquear(valor: boolean) {
     ocupada = valor;
-    servicio.disabled = valor;
-    fecha.disabled = valor;
+    // Si no sabem el resultat, primer resolem la mateixa sol·licitud.
+    servicio.disabled = valor || pendiente !== null;
+    fecha.disabled = valor || pendiente !== null;
     reintentar.disabled = valor;
     lista.querySelectorAll("button").forEach(boton => {
-        boton.disabled = valor;
+        boton.disabled = valor || pendiente !== null;
     });
 }
-// Conservamos la misma solicitud hasta conocer su resultado para no duplicar una cita.
+// Conservem la sol·licitud fins a saber-ne el resultat per evitar duplicats.
 async function reservar(datos: SolicitudReserva) {
     const actual = contexto;
     if (!actual?.esVigente() || ocupada) {
@@ -48,7 +50,7 @@ async function reservar(datos: SolicitudReserva) {
     pendiente = datos;
     guardarPendiente();
     bloquear(true);
-    mensaje.textContent = "Confirmando reserva...";
+    mensaje.textContent = "Confirmant la reserva…";
     try {
         const resultado = await solicitarReserva(datos);
         if (!actual.esVigente()) {
@@ -58,13 +60,13 @@ async function reservar(datos: SolicitudReserva) {
         guardarPendiente();
         reintentar.hidden = true;
         if (resultado.status === "confirmed") {
-            resumen.textContent = "Cita confirmada: " + datos.dateStr + " a las " + datos.timeStr;
+            resumen.textContent = "Cita confirmada: " + datos.dateStr + " a les " + datos.timeStr;
         }
         else if (resultado.status === "cancelled") {
-            resumen.textContent = "Esta solicitud corresponde a una cita cancelada. Consulta Mis citas.";
+            resumen.textContent = "Aquesta sol·licitud correspon a una cita cancel·lada. Consulta Les meves cites.";
         }
         else {
-            resumen.textContent = "Esta solicitud corresponde a una cita hecha. Consulta Mis citas.";
+            resumen.textContent = "Aquesta sol·licitud correspon a una cita completada. Consulta Les meves cites.";
         }
         exito.classList.remove("hidden");
         mensaje.textContent = "";
@@ -74,8 +76,13 @@ async function reservar(datos: SolicitudReserva) {
         if (!actual.esVigente()) {
             return;
         }
-        mensaje.textContent = error instanceof Error ? error.message : "No se pudo confirmar. Reintenta la misma solicitud.";
-        reintentar.hidden = false;
+        mensaje.textContent = explicarErrorReserva(error);
+        reintentar.hidden = !esRespuestaReservaIncierta(error);
+        if (reintentar.hidden) {
+            pendiente = null;
+            guardarPendiente();
+            lista.replaceChildren();
+        }
     }
     finally {
         if (actual.esVigente()) {
@@ -83,7 +90,7 @@ async function reservar(datos: SolicitudReserva) {
         }
     }
 }
-// Descartamos consultas antiguas si el usuario cambia servicio o fecha antes de recibirlas.
+// Descartem consultes anteriors si canvia el servei o la data.
 async function cargarHoras() {
     const actual = contexto;
     if (!actual?.esVigente() || ocupada) {
@@ -92,22 +99,22 @@ async function cargarHoras() {
     const consulta = ++revision;
     lista.replaceChildren();
     exito.classList.add("hidden");
-    // Una seleccion nueva es una solicitud nueva. Los reintentos conservan su identificador.
+    // Una selecció nova inicia una sol·licitud; els reintents conserven l’ID.
     pendiente = null;
     guardarPendiente();
     reintentar.hidden = true;
     if (!servicio.value || !fecha.value) {
-        mensaje.textContent = "Selecciona servicio y fecha.";
+        mensaje.textContent = "Tria un servei i una data.";
         return;
     }
-    mensaje.textContent = "Consultando disponibilidad...";
+    mensaje.textContent = "Consultant la disponibilitat…";
     try {
         const datos = { serviceId: servicio.value, dateStr: fecha.value };
         const resultado = await consultarDisponibilidad(datos);
         if (!actual.esVigente() || consulta !== revision) {
             return;
         }
-        mensaje.textContent = resultado.slots.length ? "Selecciona una hora para confirmar la cita." : "No hay horas disponibles para esa fecha.";
+        mensaje.textContent = resultado.slots.length ? "Tria una hora per confirmar la cita." : "No hi ha hores disponibles per a aquesta data.";
         for (const hueco of resultado.slots) {
             const boton = document.createElement("button");
             boton.type = "button";
@@ -121,7 +128,7 @@ async function cargarHoras() {
     }
     catch (error) {
         if (actual.esVigente() && consulta === revision) {
-            mensaje.textContent = error instanceof Error ? error.message : "No se pudo consultar. Prueba otra vez.";
+            mensaje.textContent = explicarErrorReserva(error);
         }
     }
 }
@@ -140,15 +147,15 @@ observarAreaAutorizada(["client", "admin"], actual => {
             if (!actual.esVigente()) {
                 return;
             }
-            servicio.replaceChildren(new Option("Selecciona un servicio", ""));
+            servicio.replaceChildren(new Option("Tria un servei", ""));
             for (const item of catalogo) {
                 servicio.add(new Option(item.name + " · " + item.durationMin + " min · " + item.price + " EUR", item.id));
             }
             fecha.min = formatearFechaNegocio(config.timezone);
             fecha.max = sumarDiasCalendario(fecha.min, 30);
             document.getElementById("booking-zone")!.textContent = config.timezone;
-            document.getElementById("booking-professional")!.textContent = config.professionalName || "Profesional principal";
-            mensaje.textContent = catalogo.length ? "Selecciona servicio y fecha." : "No hay servicios activos.";
+            document.getElementById("booking-professional")!.textContent = config.professionalName || "Professional principal";
+            mensaje.textContent = catalogo.length ? "Tria un servei i una data." : "No hi ha serveis actius.";
             bloquear(false);
             try {
                 const guardada = JSON.parse(sessionStorage.getItem(clave()) || "null");
@@ -157,15 +164,16 @@ observarAreaAutorizada(["client", "admin"], actual => {
                     servicio.value = guardada.serviceId;
                     fecha.value = guardada.dateStr;
                     reintentar.hidden = false;
-                    mensaje.textContent = "Hay una solicitud sin confirmar. Reintenta para consultar su resultado sin duplicarla.";
+                    mensaje.textContent = "Hi ha una sol·licitud sense confirmar. Reintenta-la per consultar-ne el resultat sense duplicar-la.";
+                    bloquear(false);
                 }
             }
-            catch { /* Un dato corrupto no se ejecuta. */
+            catch { /* No executem una sol·licitud malmesa. */
             }
         }
         catch (error) {
             if (actual.esVigente()) {
-                mensaje.textContent = error instanceof Error ? error.message : "No se pudieron cargar los servicios.";
+                mensaje.textContent = explicarErrorReserva(error);
             }
         }
     })();

@@ -1,20 +1,14 @@
-import { doc, getDoc, onSnapshot, runTransaction, serverTimestamp, updateDoc } from "firebase/firestore";
+import { doc, onSnapshot, runTransaction, serverTimestamp, updateDoc } from "firebase/firestore";
 import { obtenerServiciosFirebase } from "./firebase";
 import type { PerfilUsuario } from "../modelos/cuentas";
 function referenciaPerfil(uid: string) {
     const servicios = obtenerServiciosFirebase();
     if (!servicios) {
-        throw new Error("Firebase no configurado.");
+        throw new Error("Firebase no està configurat.");
     }
     return doc(servicios.baseDatos, "users", uid);
 }
-export async function obtenerPerfilUsuario(uid: string): Promise<PerfilUsuario | null> {
-    const documento = await getDoc(referenciaPerfil(uid));
-    if (!documento.exists()) {
-        return null;
-    }
-    return documento.data() as PerfilUsuario;
-}
+// Escoltem els canvis de contacte i permisos del compte actual.
 export function observarPerfilUsuario(uid: string, recibir: (perfil: PerfilUsuario | null) => void, fallar: () => void) {
     return onSnapshot(referenciaPerfil(uid), (documento) => {
         recibir(documento.exists() ? documento.data() as PerfilUsuario : null);
@@ -22,7 +16,7 @@ export function observarPerfilUsuario(uid: string, recibir: (perfil: PerfilUsuar
 }
 export async function crearPerfilUsuario(uid: string, correo: string, nombre: string, telefono: string): Promise<void> {
     const referencia = referenciaPerfil(uid);
-    // Idempotente: recuperar un alta parcial nunca pisa el rol ni un perfil existente.
+    // Recuperar una alta incompleta no sobreescriu el perfil ni els permisos.
     await runTransaction(referencia.firestore, async (transaccion) => {
         const documento = await transaccion.get(referencia);
         if (!documento.exists()) {
@@ -33,6 +27,7 @@ export async function crearPerfilUsuario(uid: string, correo: string, nombre: st
         }
     });
 }
+// Desem només el contacte; les regles impedeixen canviar el rol.
 export async function guardarPerfilUsuario(uid: string, nombre: string, telefono: string): Promise<void> {
     await updateDoc(referenciaPerfil(uid), {
         name: nombre.trim(), phone: telefono.trim(), updatedAt: serverTimestamp(),

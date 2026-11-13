@@ -8,6 +8,7 @@ function irAlInicioDelRol(): void {
     const usuario = obtenerUsuarioActual().usuario;
     window.location.replace(usuario ? obtenerDestinoInicial(usuario.rol) : "/login?verified=1");
 }
+// Verifiquem el codi del correu i obrim la pantalla permesa.
 async function procesarVerificacion(): Promise<void> {
     if (!mensaje) {
         return;
@@ -19,17 +20,17 @@ async function procesarVerificacion(): Promise<void> {
     }
     const codigo = leerParametroUrl("oobCode");
     if (leerParametroUrl("mode") === "verifyEmail" && codigo) {
-        mensaje.textContent = "Verificando...";
+        mensaje.textContent = "Verificant…";
         try {
             await aplicarVerificacion(codigo);
             await esperarEstadoSesion();
-            mensaje.textContent = "Email verificado. Redirigiendo...";
-            // Los códigos se consumen una sola vez; nunca se confía en continueUrl recibido.
+            mensaje.textContent = "Correu verificat. Redirigint…";
+            // El codi s’usa una sola vegada; no seguim el continueUrl rebut.
             window.history.replaceState(null, "", "/verify");
             irAlInicioDelRol();
         }
         catch {
-            mensaje.textContent = "Enlace invalido o caducado. Vuelve a tu perfil y reenvia la verificacion.";
+            mensaje.textContent = "L’enllaç no és vàlid o ha caducat. Ves al perfil i torna a enviar la verificació.";
         }
         return;
     }
@@ -38,7 +39,7 @@ async function procesarVerificacion(): Promise<void> {
             await actualizarUsuarioSesion();
         }
         catch {
-            mensaje.textContent = "No se pudo comprobar el email. Vuelve a intentarlo.";
+            mensaje.textContent = "No s’ha pogut comprovar el correu. Torna-ho a provar.";
             return;
         }
         await esperarEstadoSesion();
@@ -48,13 +49,13 @@ async function procesarVerificacion(): Promise<void> {
         }
     }
     if (leerParametroUrl("sendError")) {
-        mensaje.textContent = "La cuenta se creo, pero el correo no pudo enviarse. Ve a tu perfil y pulsa en reenviar verificacion.";
+        mensaje.textContent = "El compte s’ha creat, però el correu no s’ha pogut enviar. Ves al perfil i prem Torna a enviar la verificació.";
     }
     else if (leerParametroUrl("sent")) {
-        mensaje.textContent = "Te hemos enviado un email de verificacion. Abrelo y pulsa en el enlace.";
+        mensaje.textContent = "T’hem enviat un correu de verificació. Obre’l i prem l’enllaç.";
     }
     else {
-        mensaje.textContent = "Abre el enlace del correo de verificacion para completar el acceso.";
+        mensaje.textContent = "Obre l’enllaç del correu de verificació per completar l’accés.";
     }
 }
 void procesarVerificacion();

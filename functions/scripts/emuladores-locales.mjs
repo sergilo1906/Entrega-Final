@@ -10,9 +10,10 @@ const argumentos = [fileURLToPath(new URL("../../node_modules/firebase-tools/lib
 if (modoPruebas) {
     argumentos.push('node functions/tests/emuladores/ejecutar-pruebas.mjs');
 }
-// Perfil vacío por ejecución: no reutiliza cuentas globales ni deja cachés en la fuente.
+// Creem un perfil CLI temporal sense comptes globals ni memòria cau al projecte.
 const carpetaTemporal = realpathSync(tmpdir());
 const configuracionCli = mkdtempSync(join(carpetaTemporal, "barberpro-m13-cli-"));
+// Netegem només el perfil temporal creat per aquesta execució.
 function limpiarConfiguracionCli() {
     const destino = resolve(configuracionCli);
     if (!destino.startsWith(carpetaTemporal + sep) || !destino.startsWith(join(carpetaTemporal, "barberpro-m13-cli-"))) {
@@ -24,7 +25,7 @@ const entorno = {
     ...process.env, XDG_CONFIG_HOME: configuracionCli,
     FUNCTIONS_DISCOVERY_TIMEOUT: "60", FIREBASE_CLI_DISABLE_UPDATE_CHECK: "true", CI: "true",
 };
-// La CLI local no reutiliza la sesión global ni credenciales de aplicaciones reales.
+// La CLI local no fa servir la sessió global ni credencials reals.
 delete entorno.GOOGLE_APPLICATION_CREDENTIALS;
 delete entorno.FIREBASE_TOKEN;
 delete entorno.DEBUG;
@@ -35,7 +36,7 @@ proceso.on("error", () => {
     limpiarConfiguracionCli();
     process.exitCode = 1;
 });
-// Un proceso interrumpido devuelve null: nunca debe presentarse como éxito.
+// Un procés interromput retorna null i ha de comptar com un error.
 proceso.on("exit", (codigo) => {
     limpiarConfiguracionCli();
     process.exitCode = typeof codigo === "number" ? codigo : 1;

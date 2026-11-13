@@ -1,4 +1,4 @@
-import { esperarEstadoSesion, observarSesion, obtenerUsuarioActual } from "../datos/sesion";
+import { observarSesion, obtenerUsuarioActual } from "../datos/sesion";
 import type { EstadoSesion, Rol, UsuarioSesion } from "../modelos/cuentas";
 export const PERMISOS_RUTA: Record<string, Rol[]> = {
     "/perfil": ["client", "admin"], "/reservar": ["client", "admin"], "/mis-citas": ["client", "admin"],
@@ -8,9 +8,7 @@ export interface ContextoAutorizado {
     usuario: UsuarioSesion;
     esVigente: () => boolean;
 }
-// Un contexto por pantalla. No se reinicia un formulario editado por una renovación
-// transitoria del token; un cambio de identidad/rol o un error sí invalida sus respuestas.
-// Al cambiar de cuenta limpiamos la pantalla e invalidamos las respuestas anteriores.
+// En canviar de compte, netegem la pantalla i descartem les respostes anteriors.
 export function observarAreaAutorizada(roles: readonly Rol[], cargar: (contexto: ContextoAutorizado) => void, limpiar: () => void): void {
     let claveAnterior = "";
     let revision = 0;
@@ -35,11 +33,12 @@ export function observarAreaAutorizada(roles: readonly Rol[], cargar: (contexto:
     });
 }
 export function obtenerEtiquetaRol(rol: Rol): string {
-    return rol === "admin" ? "Administrador" : "Cliente";
+    return rol === "admin" ? "Administrador" : "Client";
 }
 export function obtenerDestinoInicial(rol: Rol): string {
     return rol === "admin" ? "/admin" : "/reservar";
 }
+// Comprovem sessió, correu verificat i rol abans de mostrar dades.
 export function comprobarPermiso(estado: EstadoSesion, roles: readonly Rol[], correoObligatorio = true): boolean {
     if (estado.estado !== "autenticado" || !estado.usuario) {
         return false;
@@ -49,19 +48,10 @@ export function comprobarPermiso(estado: EstadoSesion, roles: readonly Rol[], co
     }
     return roles.includes(estado.usuario.rol);
 }
-export function obtenerRolSesion(): Rol | null {
-    return obtenerUsuarioActual().usuario?.rol || null;
-}
-export async function exigirRol(roles: Rol[]): Promise<Rol | null> {
-    const estado = await esperarEstadoSesion();
-    if (comprobarPermiso(estado, roles)) {
-        return estado.usuario!.rol;
-    }
-    return null;
-}
 export function mostrarPaginaAutorizada(): void {
     document.documentElement.removeAttribute("data-auth-pending");
 }
+// Redirigim els accessos sense permís; el servidor també els comprova.
 export function protegerRutaActual(): void {
     const ruta = window.location.pathname.replace(/\/+$/, "") || "/";
     const roles = PERMISOS_RUTA[ruta];

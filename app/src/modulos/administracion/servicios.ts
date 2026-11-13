@@ -2,6 +2,7 @@ import { observarAreaAutorizada, type ContextoAutorizado } from "../../comun/per
 import { obtenerCatalogoCompleto } from "../../datos/catalogo";
 import { guardarServicio } from "../../datos/funciones-remotas";
 import { bloquearFormulario } from "../../comun/formularios";
+import { explicarErrorAdministracion } from "../../comun/errores";
 import type { ServicioAdministrable } from "../../modelos/agenda";
 const formulario = document.querySelector<HTMLFormElement>("#service-create-form")!;
 const lista = document.getElementById("services-list")!;
@@ -13,7 +14,7 @@ const activo = document.querySelector<HTMLInputElement>("#service-active")!;
 let contexto: ContextoAutorizado | null = null;
 let nuevoId = crypto.randomUUID();
 let ocupada = false;
-// El servidor valida el servicio; reutilizar su ID permite reintentar sin crear duplicados.
+// Reutilitzem l’ID del servei per poder reintentar sense duplicar-lo.
 async function guardar(item: ServicioAdministrable) {
     const actual = contexto;
     if (!actual?.esVigente() || ocupada) {
@@ -24,7 +25,7 @@ async function guardar(item: ServicioAdministrable) {
     lista.querySelectorAll<HTMLInputElement | HTMLButtonElement>("input, button").forEach(c => {
         c.disabled = true;
     });
-    mensaje.textContent = "Guardando servicio...";
+    mensaje.textContent = "Desant el servei…";
     try {
         await guardarServicio(item);
         if (!actual.esVigente()) {
@@ -36,12 +37,12 @@ async function guardar(item: ServicioAdministrable) {
         }
         await cargar(actual);
         if (actual.esVigente()) {
-            mensaje.textContent = "Servicio guardado.";
+            mensaje.textContent = "Servei desat.";
         }
     }
     catch (error) {
         if (actual.esVigente()) {
-            mensaje.textContent = error instanceof Error ? error.message : "No se pudo guardar. Reintenta.";
+            mensaje.textContent = explicarErrorAdministracion(error);
         }
     }
     finally {
@@ -54,7 +55,7 @@ async function guardar(item: ServicioAdministrable) {
         }
     }
 }
-// Cargamos el catalogo completo del administrador y creamos controles con texto seguro.
+// Carreguem el catàleg i creem els controls amb text segur.
 async function cargar(actual: ContextoAutorizado) {
     try {
         const catalogo = await obtenerCatalogoCompleto();
@@ -65,16 +66,16 @@ async function cargar(actual: ContextoAutorizado) {
         for (const item of catalogo) {
             const fila = document.createElement("form");
             fila.className = "border rounded p-3 grid gap-3 sm:grid-cols-2";
-            const nombreFila = campo("Nombre", item.name, "text");
-            const duracionFila = campo("Duracion (30 o 60 min)", String(item.durationMin), "number");
+            const nombreFila = campo("Nom", item.name, "text");
+            const duracionFila = campo("Durada (30 o 60 min)", String(item.durationMin), "number");
             duracionFila.min = "30";
             duracionFila.max = "60";
             duracionFila.step = "30";
-            const precioFila = campo("Precio (EUR)", String(item.price), "number");
+            const precioFila = campo("Preu (EUR)", String(item.price), "number");
             precioFila.min = "0";
             precioFila.step = "0.5";
             const etiqueta = document.createElement("label");
-            etiqueta.textContent = " Activo ";
+            etiqueta.textContent = " Actiu ";
             const activoFila = document.createElement("input");
             activoFila.type = "checkbox";
             activoFila.defaultChecked = item.active;
@@ -83,7 +84,7 @@ async function cargar(actual: ContextoAutorizado) {
             const guardarFila = document.createElement("button");
             guardarFila.type = "submit";
             guardarFila.className = "border rounded px-3 py-2";
-            guardarFila.textContent = "Guardar servicio";
+            guardarFila.textContent = "Desa el servei";
             fila.append(guardarFila);
             function campo(texto: string, valor: string, tipo: string) {
                 const etiqueta = document.createElement("label");
@@ -105,11 +106,11 @@ async function cargar(actual: ContextoAutorizado) {
             });
             lista.append(fila);
         }
-        mensaje.textContent = catalogo.length ? "" : "No hay servicios.";
+        mensaje.textContent = catalogo.length ? "" : "No hi ha serveis.";
     }
     catch (error) {
         if (actual.esVigente()) {
-            mensaje.textContent = error instanceof Error ? error.message : "No se pudo cargar el catalogo.";
+            mensaje.textContent = explicarErrorAdministracion(error);
         }
     }
 }

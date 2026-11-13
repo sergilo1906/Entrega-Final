@@ -4,29 +4,30 @@ import { comprobarSesion, comprobarUid } from "./permisos.js";
 import { obtenerConfiguracionAgenda } from "./configuracion.js";
 import { cabeEnHorario, estaOcupado } from "./horarios.js";
 import { validarFechaCalendario, convertirHoraAMinutos, convertirMinutosAHora, obtenerIntervaloUtc, comprobarAnticipacion } from "./fechas.js";
-// Los servicios de esta versión ocupan una o dos celdas, nunca una duración arbitraria.
+// Cada servei ocupa una o dues cel·les de mitja hora.
 export function validarDuracion(valor) {
     if (valor !== 30 && valor !== 60) {
-        throw new HttpsError("failed-precondition", "La duracion debe ser de 30 o 60 minutos.");
+        throw new HttpsError("failed-precondition", "La durada ha de ser de 30 o 60 minuts.");
     }
     return valor;
 }
+// Comprovem que el servei existeixi, estigui actiu i tingui dades vàlides.
 export async function cargarServicio(id, transaccion = null) {
     const { baseDatos } = obtenerServiciosAdministrativos();
     const referencia = baseDatos.doc("services/" + comprobarUid(id));
     const documento = transaccion ? await transaccion.get(referencia) : await referencia.get();
     if (!documento.exists || documento.get("active") !== true) {
-        throw new HttpsError("failed-precondition", "Servicio no disponible.");
+        throw new HttpsError("failed-precondition", "El servei no està disponible.");
     }
     const datos = documento.data();
     if (typeof datos.name !== "string" || !datos.name.trim() || !Number.isFinite(datos.price) || datos.price < 0) {
-        throw new HttpsError("failed-precondition", "Servicio no valido.");
+        throw new HttpsError("failed-precondition", "El servei no és vàlid.");
     }
     return {
         id: documento.id, name: datos.name, price: datos.price, durationMin: validarDuracion(datos.durationMin)
     };
 }
-// Los registros antiguos desconocidos se consideran ocupación: no los reinterpretamos ni borramos.
+// Les cites antigues també ocupen hora; no en canviem l’estat.
 export async function cargarOcupacion(fecha, transaccion = null) {
     const { baseDatos } = obtenerServiciosAdministrativos();
     const consulta = baseDatos.collection("bookings").where("dateStr", "==", fecha);
@@ -43,7 +44,7 @@ export async function cargarOcupacion(fecha, transaccion = null) {
     }
     return ocupacion;
 }
-// Usamos el mismo cálculo al mostrar huecos y al confirmar una reserva dentro de la transacción.
+// Calculem les hores igual quan les mostrem i quan confirmem la reserva.
 export function calcularHorasLibres(configuracion, fecha, duracion, ocupacion, ahora = new Date()) {
     const horas = [];
     for (let inicio = 0; inicio + duracion < 1440; inicio += 30) {
@@ -65,6 +66,7 @@ export function calcularHorasLibres(configuracion, fecha, duracion, ocupacion, a
     }
     return horas;
 }
+// Consultem les hores lliures després de validar la sessió i la data.
 export const getAvailability = onCall(async (peticion) => {
     await comprobarSesion(peticion, true);
     const fecha = validarFechaCalendario(peticion.data?.dateStr);

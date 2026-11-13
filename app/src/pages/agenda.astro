@@ -2,27 +2,27 @@
 import DisenoPrincipal from "../layouts/DisenoPrincipal.astro";
 ---
 
-<DisenoPrincipal title="Agenda diaria">
+<DisenoPrincipal title="Agenda diària" noindex>
   <section class="max-w-4xl mx-auto">
     <div class="bg-white p-4 rounded shadow flex flex-col space-y-4">
       <div class="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 class="font-semibold text-lg">Agenda diaria</h2>
-          <p class="text-xs text-gray-600">Gestiona las citas del dia con filtros claros y cambios sencillos de estado.</p>
+          <h1 class="font-semibold text-lg">Agenda diària</h1>
+          <p class="text-xs text-gray-600">Consulta les cites del dia, filtra-les i actualitza’n l’estat.</p>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-gray-600">
           <label class="flex items-center gap-2">
-            <span>Fecha</span>
+            <span>Data</span>
             <input id="agenda-date" type="date" class="border rounded px-2 py-1 text-sm" />
           </label>
           <label class="flex items-center gap-2">
-            <span>Estado</span>
+            <span>Estat</span>
             <select id="agenda-status" class="border rounded px-2 py-1 text-sm">
-              <option value="all">Todos</option>
+              <option value="all">Totes</option>
               <option value="confirmed">Confirmada</option>
-              <option value="done">Hecha</option>
-              <option value="cancelled">Cancelada</option>
+              <option value="done">Completada</option>
+              <option value="cancelled">Cancel·lada</option>
             </select>
           </label>
         </div>

@@ -2,11 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Mantiene la preferencia de los controles nativos del proyecto de referencia. */
+/* Els controls natius mantenen el mateix contrast que la resta de la pantalla. */
 :root {
-  color-scheme: light dark;
+  color-scheme: light;
 }
 
-/* Una página estática nunca contiene datos privados; estos se cargan tras autorizar. */
+/* Destaquem el focus perquè també es pugui navegar amb el teclat. */
+:focus-visible { outline: 2px solid #1d4ed8; outline-offset: 3px; }
+input, select, button { min-width: 0; }
+
+/* Carreguem les dades privades només després de comprovar els permisos. */
 html[data-auth-pending] main { visibility: hidden; pointer-events: none; }
 html[data-auth-pending] [data-modal-private], html[data-auth-pending] #toast-root { visibility: hidden; pointer-events: none; }

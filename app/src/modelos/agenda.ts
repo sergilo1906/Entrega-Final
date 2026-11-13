@@ -20,7 +20,7 @@ export interface Cita {
     dateStr: string;
     timeStr: string;
     durationMin: number;
-    // Los estados históricos se leen sin transformarlos ni habilitar acciones.
+    // Mostrem els estats antics sense canviar-los ni permetre accions.
     status: string;
     startAt?: Timestamp;
 }

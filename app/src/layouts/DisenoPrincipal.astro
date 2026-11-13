@@ -11,13 +11,17 @@ const { title: titulo = "BarberPro Studio", noindex: noIndex = false } = Astro.p
 const rutasPublicas = ["/", "/404", "/ayuda", "/legal", "/login", "/registro", "/verify"];
 const ruta = Astro.url.pathname.replace(/\/+$/, "") || "/";
 const requiereSesion = !rutasPublicas.includes(ruta);
+// En WEB no autoritzem connexions als emuladors locals.
+const connexionsLocals = import.meta.env.PUBLIC_FIREBASE_MODE === "local"
+  ? "http://127.0.0.1:9099 http://127.0.0.1:8088 http://127.0.0.1:5001 ws://127.0.0.1:* ws://localhost:*" : "";
+const politicaContingut = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://www.google.com/images/cleardot.gif; connect-src 'self' " + connexionsLocals + " https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com https://*.cloudfunctions.net; frame-src 'none'";
 ---
 
-<html lang="es" class="scroll-smooth" data-auth-pending={requiereSesion ? "" : undefined}>
+<html lang="ca" class="scroll-smooth" data-auth-pending={requiereSesion ? "" : undefined}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://www.google.com/images/cleardot.gif; connect-src 'self' http://127.0.0.1:9099 http://127.0.0.1:8088 http://127.0.0.1:5001 ws://127.0.0.1:* ws://localhost:* https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com https://*.cloudfunctions.net; frame-src http://127.0.0.1:9099" />
+    <meta http-equiv="Content-Security-Policy" content={politicaContingut} />
     <title>{titulo} - BarberPro Studio</title>
     {noIndex && <meta name="robots" content="noindex, nofollow" />}
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
@@ -31,7 +35,11 @@ const requiereSesion = !rutasPublicas.includes(ruta);
       <slot />
     </main>
     <footer class="text-center text-[11px] text-gray-500 py-8">
-      BarberPro Studio | Reservas y agenda de barberia
+      BarberPro Studio | Reserves i agenda de barberia
+      <div class="mt-2 flex justify-center gap-4 text-sm">
+        <a href="/ayuda" class="underline hover:text-gray-900">Ajuda</a>
+        <a href="/legal" class="underline hover:text-gray-900">Avís legal</a>
+      </div>
     </footer>
   </body>
 </html>

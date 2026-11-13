@@ -6,13 +6,13 @@ import { validarDuracion } from "./disponibilidad.js";
 import { validarHorario, cabeEnHorario } from "./horarios.js";
 import { validarZona, obtenerConfiguracionAgenda, actualizarControlAgenda } from "./configuracion.js";
 import { validarFechaCalendario, convertirHoraAMinutos, formatearFechaZona } from "./fechas.js";
-// Guardamos únicamente los campos del servicio; las citas conservan su snapshot anterior.
+// Desem el servei; les cites conserven la còpia que tenien en reservar.
 export const saveService = onCall(async (peticion) => {
     const identidad = await comprobarAdministrador(peticion);
     const datos = peticion.data;
     const id = comprobarUid(datos?.serviceId);
     if (typeof datos.name !== "string" || !datos.name.trim() || datos.name.trim().length > 100 || typeof datos.price !== "number" || !Number.isFinite(datos.price) || datos.price < 0 || typeof datos.active !== "boolean") {
-        throw new HttpsError("invalid-argument", "Revisa nombre, precio y estado del servicio.");
+        throw new HttpsError("invalid-argument", "Revisa el nom, el preu i l’estat del servei.");
     }
     const durationMin = validarDuracion(datos.durationMin);
     const { baseDatos } = obtenerServiciosAdministrativos();
@@ -26,7 +26,7 @@ export const saveService = onCall(async (peticion) => {
         return { ok: true, id };
     });
 });
-// Antes de cambiar el horario revisamos las citas futuras. El control compartido detecta carreras.
+// Revisem les cites futures abans de canviar l’horari.
 export const saveSchedule = onCall(async (peticion) => {
     const identidad = await comprobarAdministrador(peticion);
     const timezone = validarZona(peticion.data?.timezone);
@@ -48,12 +48,12 @@ export const saveSchedule = onCall(async (peticion) => {
                 continue;
             }
             if (zonaAnterior !== timezone) {
-                throw new HttpsError("failed-precondition", "Hay citas futuras: no cambies su zona horaria sin revisarlas.");
+                throw new HttpsError("failed-precondition", "Hi ha cites futures: no en canviïs la zona horària sense revisar-les.");
             }
             const duracion = validarDuracion(cita.durationMin ?? cita.serviceSnapshot?.durationMin);
             const fecha = validarFechaCalendario(cita.dateStr);
             if (!cabeEnHorario(days, fecha, convertirHoraAMinutos(cita.timeStr), duracion)) {
-                throw new HttpsError("failed-precondition", "El horario dejaria una cita existente fuera de jornada.");
+                throw new HttpsError("failed-precondition", "L’horari deixaria una cita existent fora de la jornada.");
             }
         }
         transaccion.set(referencia, {
@@ -62,12 +62,12 @@ export const saveSchedule = onCall(async (peticion) => {
         return { ok: true };
     });
 });
-// Un día cerrado es una fecha completa. No se cierra si quedan citas sin resolver.
+// Tanquem el dia sencer només si no queden cites pendents de resoldre.
 export const setClosedDay = onCall(async (peticion) => {
     const identidad = await comprobarAdministrador(peticion);
     const fecha = validarFechaCalendario(peticion.data?.dateStr);
     if (typeof peticion.data?.closed !== "boolean") {
-        throw new HttpsError("invalid-argument", "Indica si el dia esta cerrado.");
+        throw new HttpsError("invalid-argument", "Indica si el dia està tancat.");
     }
     const { baseDatos } = obtenerServiciosAdministrativos();
     return baseDatos.runTransaction(async (transaccion) => {
@@ -77,7 +77,7 @@ export const setClosedDay = onCall(async (peticion) => {
             const citas = await transaccion.get(baseDatos.collection("bookings").where("dateStr", "==", fecha));
             for (const cita of citas.docs) {
                 if (cita.get("status") !== "cancelled" && cita.get("status") !== "done") {
-                    throw new HttpsError("failed-precondition", "Resuelve las citas de ese dia antes de cerrarlo.");
+                    throw new HttpsError("failed-precondition", "Resol les cites d’aquest dia abans de tancar-lo.");
                 }
             }
         }

@@ -40,6 +40,8 @@ test("paginas publicas adaptadas, enlaces validos y anchura de pantalla", async 
     for (const ruta of ["/", "/ayuda", "/legal", "/login", "/registro", "/verify", "/404"]) {
         await page.goto(ruta);
         await expect(page.locator("nav")).toBeVisible();
+        await expect(page.locator("html")).toHaveAttribute("lang", "ca");
+        await expect(page.locator("main h1")).toHaveCount(1);
         expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
         const enlaces = await page.locator("a[href^='/']").evaluateAll(elementos => elementos.map(e => e.getAttribute("href")));
         for (const enlace of enlaces) {
@@ -67,8 +69,8 @@ test("registro, verificacion real en Auth local y cierre de sesion", async ({ pa
     await page.goto("/verify?mode=verifyEmail&oobCode=" + encodeURIComponent(codigo.oobCode));
     await expect(page).toHaveURL(/\/reservar\/?$/);
     await page.goto("/perfil");
-    await expect(page.locator("#perfil-role")).toHaveText("Cliente");
-    await expect(page.locator("#perfil-verif")).toHaveText("Verificado");
+    await expect(page.locator("#perfil-role")).toHaveText("Client");
+    await expect(page.locator("#perfil-verif")).toHaveText("Verificat");
     await page.locator("#btn-logout").click();
     await expect(page).toHaveURL(/\/login/);
     await page.goto("/mis-citas");
@@ -82,15 +84,17 @@ test("cliente reserva, ve solo sus citas, cancela y recupera la hora", async ({ 
     await page.goto("/mis-citas");
     await expect(page.locator("#my-list")).toContainText("Confirmada");
     page.once("dialog", dialogo => dialogo.accept());
-    await page.getByRole("button", { name: "Cancelar cita", exact: true }).click();
-    await expect(page.locator("#my-list")).toContainText("Cancelada");
+    await page.getByRole("button", { name: "Cancel·la la cita", exact: true }).click();
+    await expect(page.locator("#my-list")).toContainText("Cancel·lada");
     await page.goto("/reservar");
     await expect(page.locator("#service-select option[value='corte']")).toBeAttached();
     await page.locator("#service-select").selectOption("corte");
     await page.locator("#date-select").fill(fecha());
     await expect(page.getByRole("button", { name: "09:00", exact: true })).toBeVisible();
-    await page.goto("/admin");
-    await expect(page).toHaveURL(/acceso=denegado/);
+    for (const ruta of ["/admin", "/agenda", "/servicios", "/horarios"]) {
+        await page.goto(ruta);
+        await expect(page).toHaveURL(/acceso=denegado/);
+    }
     await expect(page.locator("#link-admin")).toBeHidden();
 });
 test("perfil editado se conserva al recargar y se vacia al cambiar de cuenta", async ({ page }) => {
@@ -100,7 +104,7 @@ test("perfil editado se conserva al recargar y se vacia al cambiar de cuenta", a
     await page.locator("#perfil-name").fill("Nombre revisado");
     await page.locator("#perfil-phone").fill("600123123");
     await page.locator("#perfil-save").click();
-    await expect(page.locator("#perfil-msg")).toHaveText("Cambios guardados.");
+    await expect(page.locator("#perfil-msg")).toHaveText("Canvis desats.");
     await page.reload();
     await expect(page.locator("#perfil-name")).toHaveValue("Nombre revisado");
     await page.locator("#btn-logout").click();
@@ -120,9 +124,9 @@ test("admin consulta agenda y completa una reserva de 60 minutos", async ({ page
     await page.locator("#agenda-date").fill(fecha(8));
     await expect(page.locator("#agenda-list")).toContainText("Confirmada");
     page.once("dialog", dialogo => dialogo.accept());
-    await page.getByRole("button", { name: "Marcar hecha", exact: true }).click();
-    await expect(page.locator("#agenda-list")).toContainText("Hecha");
-    await expect(page.getByRole("button", { name: "Marcar hecha", exact: true })).toHaveCount(0);
+    await page.getByRole("button", { name: "Marca com a completada", exact: true }).click();
+    await expect(page.locator("#agenda-list")).toContainText("Completada");
+    await expect(page.getByRole("button", { name: "Marca com a completada", exact: true })).toHaveCount(0);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 });
 test("admin crea, edita y desactiva un servicio", async ({ page }) => {
@@ -132,12 +136,12 @@ test("admin crea, edita y desactiva un servicio", async ({ page }) => {
     await page.locator("#service-duration").fill("60");
     await page.locator("#service-price").fill("30");
     await page.locator("#service-create-form button").click();
-    await expect(page.locator("#services-msg")).toHaveText("Servicio guardado.");
+    await expect(page.locator("#services-msg")).toHaveText("Servei desat.");
     const fila = page.locator("#services-list form").filter({ has: page.locator("input[value='Servicio evaluacion']") });
     await expect(fila).toHaveCount(1);
     await fila.locator("input[type='checkbox']").uncheck();
-    await fila.getByRole("button", { name: "Guardar servicio" }).click();
-    await expect(page.locator("#services-msg")).toHaveText("Servicio guardado.");
+    await fila.getByRole("button", { name: "Desa el servei" }).click();
+    await expect(page.locator("#services-msg")).toHaveText("Servei desat.");
     await expect(fila.locator("input[type='checkbox']")).not.toBeChecked();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 });
@@ -145,17 +149,74 @@ test("admin cambia horario habitual, cierra y reabre una fecha", async ({ page }
     await entrar(page, "admin");
     await page.goto("/horarios");
     await expect(page.locator("#schedule-form button")).toBeEnabled();
+    await page.locator('[data-day="0"] [data-end="0"]').fill("13:30");
     await page.locator("#schedule-form button").click();
-    await expect(page.locator("#hours-msg")).toHaveText("Cambios guardados.");
+    await expect(page.locator("#hours-msg")).toHaveText("Canvis desats.");
+    await page.reload();
+    await expect(page.locator('[data-day="0"] [data-end="0"]')).toHaveValue("13:30");
+    await page.locator('[data-day="0"] [data-end="0"]').fill("14:00");
+    await page.locator("#schedule-form button").click();
+    await expect(page.locator("#hours-msg")).toHaveText("Canvis desats.");
     await page.locator("#closed-date").fill(fecha(12));
     await page.locator("#closed-form button").click();
-    await expect(page.locator("#closed-msg")).toHaveText("Cambios guardados.");
+    await expect(page.locator("#closed-msg")).toHaveText("Canvis desats.");
     await expect(page.locator("#closed-list")).toContainText(fecha(12));
     await page.locator("#closed-state").uncheck();
     await page.locator("#closed-form button").click();
-    await expect(page.locator("#closed-msg")).toHaveText("Cambios guardados.");
+    await expect(page.locator("#closed-msg")).toHaveText("Canvis desats.");
     await expect(page.locator("#closed-list")).not.toContainText(fecha(12));
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+});
+test("la validació en català evita l’alta incorrecta i el llistat mostra l’estat buit", async ({ page }) => {
+    await page.goto("/registro");
+    await page.locator("#reg-name").fill("Laia de prova");
+    await page.locator("#reg-email").fill("validacio@example.test");
+    await page.locator("#reg-password").fill("Prova123!");
+    await page.locator("#reg-password2").fill("Diferent123!");
+    await page.locator("#reg-form button").click();
+    await expect(page.locator("#reg-msg")).toHaveText("Les contrasenyes no coincideixen.");
+    await expect(page).toHaveURL(/\/registro\/?$/);
+    await entrar(page, "otro");
+    await page.goto("/mis-citas");
+    await expect(page.locator("#my-msg")).toHaveText("No hi ha cites amb aquests filtres.");
+    await expect(page.locator("#my-list article")).toHaveCount(0);
+});
+test("doble clic i resposta perduda: recarregar i reintentar conserva una sola cita", async ({ page }) => {
+    await entrar(page);
+    let primera = true;
+    const peticions: string[] = [];
+    await page.route("**/createBooking", async ruta => {
+        peticions.push(ruta.request().postDataJSON().data.requestId);
+        if (primera) {
+            primera = false;
+            // El servidor desa la cita, però simulem que la resposta no arriba al client.
+            const resposta = await ruta.fetch();
+            expect(resposta.ok()).toBe(true);
+            await ruta.fulfill({ status: 503, json: { error: { status: "UNAVAILABLE", message: "Resposta no disponible" } } });
+        } else {
+            await ruta.continue();
+        }
+    });
+    await page.goto("/reservar");
+    await expect(page.locator("#service-select")).toBeEnabled();
+    await page.locator("#service-select").selectOption("corte");
+    await page.locator("#date-select").fill(fecha(11));
+    const hora = page.getByRole("button", { name: "09:00", exact: true });
+    await expect(hora).toBeVisible();
+    await hora.evaluate((b: HTMLButtonElement) => { b.click(); b.click(); });
+    await expect(page.locator("#booking-retry")).toBeVisible();
+    await expect(page.locator("#booking-success")).toBeHidden();
+    await expect(page.locator("#service-select")).toBeDisabled();
+    await page.reload();
+    await expect(page.locator("#booking-retry")).toBeVisible();
+    await expect(page.locator("#date-select")).toBeDisabled();
+    await page.locator("#booking-retry").click();
+    await expect(page.locator("#booking-summary")).toContainText("Cita confirmada");
+    expect(peticions).toHaveLength(2);
+    expect(peticions[0]).toBe(peticions[1]);
+    await page.goto("/mis-citas");
+    await page.locator("#filter-date").fill(fecha(11));
+    await expect(page.locator("#my-list article")).toHaveCount(1);
 });
 test("sin autenticar las siete rutas privadas requieren iniciar sesion", async ({ page }) => {
     for (const ruta of ["/perfil", "/reservar", "/mis-citas", "/admin", "/agenda", "/servicios", "/horarios"]) {
@@ -165,8 +226,7 @@ test("sin autenticar las siete rutas privadas requieren iniciar sesion", async (
 });
 test("la demo catalana se usa desde la interfaz y el administrador ve las doce citas", async ({ page }, info) => {
     const archivo = path.join(tmpdir(), "m13-demo-browser-local.json");
-    // Cada proyecto de navegador prepara una base limpia de citas; Auth conserva la misma
-    // muestra y su archivo privado durante el proceso de pruebas.
+    // Cada navegador prepara les cites; Auth conserva els comptes i l’arxiu privat.
     const archivoCompartido = process.env.M13_DEMO_BROWSER_ACCESOS || archivo;
     const salida = execFileSync(process.execPath, ["functions/scripts/preparar-demo-local.mjs", "--credenciales-salida", archivoCompartido], {
         cwd: raiz, env: process.env, encoding: "utf8"

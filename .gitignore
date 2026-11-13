@@ -1,17 +1,19 @@
-# Dependencias, compilación y cachés
+# Dependències, compilació i memòria cau
 node_modules/
 dist/
 .astro/
 .firebase/
 .sites-runtime/
 .openai/
-# Configuración privada; conservar la plantilla
+# Configuració privada; conservem la plantilla
 .env
 .env.*
 !.env.example
 **/*service-account*.json
 **/*credentials*.json
-# Resultados de herramientas y pruebas
+**/*accesos*.json
+**/*accessos*.json
+# Resultats d’eines i proves
 playwright-report/
 test-results/
 .verificacion/
@@ -20,6 +22,6 @@ entrega/
 firebase-debug.log
 firestore-debug.log
 ui-debug.log
-# Archivos del editor y del sistema
+# Arxius de l’editor i del sistema
 .DS_Store
 Thumbs.db

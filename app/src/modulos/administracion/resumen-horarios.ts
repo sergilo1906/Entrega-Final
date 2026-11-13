@@ -2,6 +2,7 @@ import { observarAreaAutorizada, type ContextoAutorizado } from "../../comun/per
 import { obtenerConfiguracionAgenda, obtenerDiasCerrados } from "../../datos/configuracion";
 import { guardarHorario, cerrarDia } from "../../datos/funciones-remotas";
 import { bloquearFormulario } from "../../comun/formularios";
+import { explicarErrorAdministracion } from "../../comun/errores";
 import type { DiaHorario } from "../../modelos/agenda";
 const formulario = document.querySelector<HTMLFormElement>("#schedule-form")!;
 const cierre = document.querySelector<HTMLFormElement>("#closed-form")!;
@@ -16,7 +17,7 @@ function bloquear(valor: boolean) {
     bloquearFormulario(formulario, valor);
     bloquearFormulario(cierre, valor);
 }
-// Leemos los siete dias y solo los tramos que el administrador ha rellenado.
+// Llegim els set dies i les franges que s’han emplenat.
 function leerDias(): DiaHorario[] {
     const resultado: DiaHorario[] = [];
     for (const fila of dias) {
@@ -33,7 +34,7 @@ function leerDias(): DiaHorario[] {
     }
     return resultado;
 }
-// Consultamos las fechas completas cerradas, sin reglas parciales por trabajador.
+// Mostrem les dates que estan tancades.
 async function listarCierres(actual: ContextoAutorizado) {
     const fechas = await obtenerDiasCerrados();
     if (!actual.esVigente()) {
@@ -47,26 +48,26 @@ async function listarCierres(actual: ContextoAutorizado) {
         lista.append(li);
     }
 }
-// Bloqueamos ambos formularios mientras se guarda y conservamos sus datos ante un error.
+// Bloquegem els formularis mentre desem i conservem les dades si falla.
 async function ejecutar(operacion: () => Promise<unknown>, aviso: HTMLElement) {
     const actual = contexto;
     if (!actual?.esVigente() || ocupada) {
         return;
     }
     bloquear(true);
-    aviso.textContent = "Guardando...";
+    aviso.textContent = "Desant…";
     try {
         await operacion();
         if (actual.esVigente()) {
             await listarCierres(actual);
             if (actual.esVigente()) {
-                aviso.textContent = "Cambios guardados.";
+                aviso.textContent = "Canvis desats.";
             }
         }
     }
     catch (error) {
         if (actual.esVigente()) {
-            aviso.textContent = error instanceof Error ? error.message : "No se pudo guardar. Reintenta.";
+            aviso.textContent = explicarErrorAdministracion(error);
         }
     }
     finally {
@@ -106,7 +107,7 @@ observarAreaAutorizada(["admin"], actual => {
         }
         catch (error) {
             if (actual.esVigente()) {
-                mensaje.textContent = error instanceof Error ? error.message : "No se pudo cargar el horario.";
+                mensaje.textContent = explicarErrorAdministracion(error);
             }
         }
         finally {

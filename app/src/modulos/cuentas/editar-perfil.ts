@@ -18,6 +18,7 @@ let cerrando = false;
 let perfilEditado = false;
 let ultimoUid = "";
 let revisionIdentidad = 0;
+// Descartem respostes d’un compte que ja no està actiu.
 function mismaIdentidad(uid: string, revision: number): boolean {
     return revision === revisionIdentidad && obtenerUsuarioActual().usuario?.uid === uid;
 }
@@ -30,7 +31,7 @@ function mostrarEstadoVerificacion(verificado: boolean): void {
     if (!verificacion) {
         return;
     }
-    verificacion.textContent = verificado ? "Verificado" : "Pendiente";
+    verificacion.textContent = verificado ? "Verificat" : "Pendent";
     verificacion.className = "inline-block rounded px-2 py-0.5 text-xs font-medium "
         + (verificado ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-800");
     reenviar?.classList.toggle("hidden", verificado);
@@ -102,10 +103,10 @@ observarSesion((estado) => {
     }
     ultimoUid = usuario.uid;
     if (estado.errorPerfil) {
-        mostrarMensaje("No se pudieron cargar tus datos. Revisa la conexion antes de guardar.");
+        mostrarMensaje("No s’han pogut carregar les dades. Revisa la connexió abans de desar.");
     }
     else if (!estado.perfil) {
-        mostrarMensaje("Completa tus datos y pulsa Guardar cambios para terminar la configuracion inicial.");
+        mostrarMensaje("Completa les dades i prem Desa els canvis per acabar la configuració inicial.");
     }
 });
 guardar?.addEventListener("click", async () => {
@@ -127,7 +128,7 @@ guardar?.addEventListener("click", async () => {
     const revision = revisionIdentidad;
     const nuevoNombre = nombre.value;
     const nuevoTelefono = telefono.value;
-    mostrarMensaje("Guardando cambios...");
+    mostrarMensaje("Desant els canvis…");
     try {
         await crearPerfilUsuario(usuario.uid, usuario.correo, nuevoNombre, nuevoTelefono);
         await esperarEstadoSesion();
@@ -138,8 +139,8 @@ guardar?.addEventListener("click", async () => {
         await esperarEstadoSesion();
         if (mismaIdentidad(usuario.uid, revision)) {
             perfilEditado = nombre.value !== nuevoNombre || telefono.value !== nuevoTelefono;
-            mostrarMensaje("Cambios guardados.");
-            mostrarAviso("Perfil guardado.", "success");
+            mostrarMensaje("Canvis desats.");
+            mostrarAviso("Perfil desat.", "success");
         }
     }
     catch (error) {
@@ -164,12 +165,12 @@ reenviar?.addEventListener("click", async () => {
     }
     const revision = revisionIdentidad;
     reenviar.disabled = true;
-    mostrarMensaje("Enviando correo de verificacion...");
+    mostrarMensaje("Enviant el correu de verificació…");
     try {
         await enviarVerificacion();
         await esperarEstadoSesion();
         if (mismaIdentidad(uid, revision)) {
-            mostrarMensaje("Correo enviado. Revisa tambien la carpeta de spam.");
+            mostrarMensaje("Correu enviat. Revisa també la carpeta de correu brossa.");
         }
     }
     catch (error) {
@@ -194,7 +195,7 @@ salir?.addEventListener("click", async () => {
         window.location.assign("/");
     }
     catch {
-        mostrarMensaje("No se pudo cerrar sesion. Vuelve a intentarlo.");
+        mostrarMensaje("No s’ha pogut tancar la sessió. Torna-ho a provar.");
     }
     finally {
         cerrando = false;

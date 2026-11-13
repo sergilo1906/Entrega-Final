@@ -11,7 +11,7 @@ export function obtenerInicioCita(cita: Pick<Cita, "startAt" | "dateStr" | "time
     if (cita.startAt && typeof cita.startAt.toDate === "function") {
         return cita.startAt.toDate();
     }
-    // Compatibilidad con documentos antiguos: nunca interpretar la hora en la zona del navegador.
+    // Llegim les cites antigues amb la zona de la barberia, no la del navegador.
     const hora = cita.timeStr || "00:00";
     if (!esFechaCalendarioValida(cita.dateStr) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(hora)) {
         return new Date(NaN);
@@ -25,6 +25,7 @@ export function obtenerInicioCita(cita: Pick<Cita, "startAt" | "dateStr" | "time
     }
     return instante;
 }
+// Calculem el dia segons la zona de la barberia.
 export function formatearFechaNegocio(zona: string, instante = new Date()): string {
     const partes = new Intl.DateTimeFormat("en-CA", {
         timeZone: zona, year: "numeric", month: "2-digit", day: "2-digit"

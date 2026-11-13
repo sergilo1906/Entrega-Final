@@ -2,45 +2,45 @@
 import DisenoPrincipal from "../layouts/DisenoPrincipal.astro";
 ---
 
-<DisenoPrincipal title="Crear cuenta" noindex>
+<DisenoPrincipal title="Crea un compte" noindex>
   <section class="max-w-sm mx-auto bg-white p-4 rounded shadow text-sm space-y-4" id="reg-wrapper">
-    <h2 class="font-semibold text-lg">Crear cuenta</h2>
-    <p class="text-sm text-gray-600">Registrate para reservar y gestionar tus citas.</p>
+    <h1 class="font-semibold text-lg">Crea un compte</h1>
+    <p class="text-sm text-gray-600">Registra’t per reservar i gestionar les teves cites.</p>
 
     <form id="reg-form" class="text-sm space-y-4 opacity-50 pointer-events-none">
       <div>
-        <label for="reg-name" class="block text-xs text-gray-600 mb-1">Nombre</label>
-        <input id="reg-name" name="name" type="text" autocomplete="name" required class="w-full border rounded px-3 py-2" placeholder="Tu nombre" />
+        <label for="reg-name" class="block text-xs text-gray-600 mb-1">Nom</label>
+        <input id="reg-name" name="name" type="text" autocomplete="name" required class="w-full border rounded px-3 py-2" placeholder="El teu nom" />
       </div>
 
       <div>
-        <label for="reg-phone" class="block text-xs text-gray-600 mb-1">Telefono</label>
+        <label for="reg-phone" class="block text-xs text-gray-600 mb-1">Telèfon</label>
         <input id="reg-phone" name="phone" type="tel" autocomplete="tel" class="w-full border rounded px-3 py-2" placeholder="Opcional" />
       </div>
 
       <div>
-        <label for="reg-email" class="block text-xs text-gray-600 mb-1">Email</label>
+        <label for="reg-email" class="block text-xs text-gray-600 mb-1">Correu electrònic</label>
         <input id="reg-email" name="email" type="email" autocomplete="email" required class="w-full border rounded px-3 py-2" />
       </div>
 
       <div>
-        <label for="reg-password" class="block text-xs text-gray-600 mb-1">Contrasena</label>
+        <label for="reg-password" class="block text-xs text-gray-600 mb-1">Contrasenya</label>
         <input id="reg-password" name="password" type="password" autocomplete="new-password" minlength="6" required class="w-full border rounded px-3 py-2" />
       </div>
 
       <div>
-        <label for="reg-password2" class="block text-xs text-gray-600 mb-1">Repite contrasena</label>
+        <label for="reg-password2" class="block text-xs text-gray-600 mb-1">Repeteix la contrasenya</label>
         <input id="reg-password2" name="password2" type="password" autocomplete="new-password" minlength="6" required class="w-full border rounded px-3 py-2" />
       </div>
 
       <button class="w-full bg-blue-600 text-white rounded py-2 font-medium hover:bg-blue-700 focus:outline-none focus:ring focus:ring-blue-300">
-        Crear cuenta
+        Crea un compte
       </button>
 
       <p id="reg-msg" role="status" aria-live="polite" class="text-xs text-gray-600 min-h-[1.5rem] leading-tight"></p>
 
       <p class="text-xs text-center text-gray-600">
-        Ya tienes cuenta? <a href="/login" class="text-blue-600 hover:underline">Iniciar sesion</a>
+        Ja tens compte? <a href="/login" class="text-blue-600 hover:underline">Inicia sessió</a>
       </p>
     </form>
   </section>

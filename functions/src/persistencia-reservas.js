@@ -12,14 +12,14 @@ function respuestaReserva(id, cita) {
         ok: true, bookingId: id, status: cita.status, startAt: cita.startAt.toDate().toISOString(), endAt: cita.endAt.toDate().toISOString()
     };
 }
-// El identificador depende del cliente y de su solicitud: un reintento no crea otra cita.
+// El client i la sol·licitud donen sempre el mateix ID per evitar duplicats.
 export async function crearReserva(identidad, datos) {
     const serviceId = comprobarUid(datos?.serviceId);
     const dateStr = validarFechaCalendario(datos?.dateStr);
     const timeStr = validarHora(datos?.timeStr);
     const requestId = comprobarUid(datos?.requestId);
     if (convertirHoraAMinutos(timeStr) % 30 !== 0) {
-        throw new HttpsError("invalid-argument", "Elige una hora de la cuadricula.");
+        throw new HttpsError("invalid-argument", "Tria una hora de la graella.");
     }
     const uid = identidad.usuario.uid;
     const id = hash(JSON.stringify([uid, requestId]));
@@ -31,7 +31,7 @@ export async function crearReserva(identidad, datos) {
         const existente = await transaccion.get(referencia);
         if (existente.exists) {
             if (existente.get("requestHash") !== fingerprint) {
-                throw new HttpsError("failed-precondition", "La solicitud ya se uso con otros datos.");
+                throw new HttpsError("failed-precondition", "La sol·licitud ja s’ha fet servir amb unes altres dades.");
             }
             return respuestaReserva(id, existente.data());
         }
@@ -39,13 +39,13 @@ export async function crearReserva(identidad, datos) {
         comprobarAnticipacion(dateStr, configuracion.timezone);
         const cerrado = await transaccion.get(baseDatos.doc("closedDays/" + dateStr));
         if (cerrado.exists) {
-            throw new HttpsError("failed-precondition", "La barberia esta cerrada ese dia.");
+            throw new HttpsError("failed-precondition", "La barberia està tancada aquest dia.");
         }
         const servicio = await cargarServicio(serviceId, transaccion);
         const ocupacion = await cargarOcupacion(dateStr, transaccion);
         const horas = calcularHorasLibres(configuracion, dateStr, servicio.durationMin, ocupacion);
         if (!horas.includes(timeStr)) {
-            throw new HttpsError("already-exists", "El horario ya no esta disponible.");
+            throw new HttpsError("already-exists", "L’hora ja no està disponible.");
         }
         const intervalo = obtenerIntervaloUtc(dateStr, timeStr, servicio.durationMin, configuracion.timezone);
         const lockKeys = [];
@@ -53,19 +53,19 @@ export async function crearReserva(identidad, datos) {
             const clave = UID_PROFESIONAL + "_" + dateStr + "_" + convertirMinutosAHora(minuto);
             const documento = await transaccion.get(baseDatos.doc("bookingLocks/" + clave));
             if (documento.exists) {
-                throw new HttpsError("already-exists", "Horario ocupado.");
+                throw new HttpsError("already-exists", "Hora ocupada.");
             }
             lockKeys.push(clave);
         }
         const cita = {
-            userId: uid, userName: String(perfil.name || identidad.usuario.displayName || "Cliente"),
+            userId: uid, userName: String(perfil.name || identidad.usuario.displayName || "Client"),
             userEmail: identidad.usuario.email || "", userPhone: String(perfil.phone || ""),
             barberUid: UID_PROFESIONAL, serviceId, serviceSnapshot: servicio, durationMin: servicio.durationMin,
             dateStr, timeStr, status: "confirmed", lockKeys, requestHash: fingerprint,
             startAt: Timestamp.fromDate(intervalo.inicio), endAt: Timestamp.fromDate(intervalo.fin),
             createdAt: FieldValue.serverTimestamp(),
         };
-        // Todas las lecturas han terminado. Cita, ocupación y control se confirman conjuntamente.
+        // Després de totes les lectures, desem la cita, les cel·les i el control alhora.
         transaccion.create(referencia, cita);
         for (const clave of lockKeys) {
             transaccion.create(baseDatos.doc("bookingLocks/" + clave), { bookingId: id });
@@ -74,7 +74,7 @@ export async function crearReserva(identidad, datos) {
         return respuestaReserva(id, cita);
     });
 }
-// Cancelar libera solo las celdas de esta cita. Completar no libera una hora que ya se ha prestado.
+// Cancel·lar allibera les cel·les pròpies; completar les conserva.
 export async function cambiarEstado(identidad, datos, estado) {
     const id = comprobarUid(datos?.bookingId);
     const { baseDatos } = obtenerServiciosAdministrativos();
@@ -83,11 +83,11 @@ export async function cambiarEstado(identidad, datos, estado) {
         const referencia = baseDatos.doc("bookings/" + id);
         const documento = await transaccion.get(referencia);
         if (!documento.exists) {
-            throw new HttpsError("not-found", "Cita no encontrada.");
+            throw new HttpsError("not-found", "No s’ha trobat la cita.");
         }
         const cita = documento.data();
         if (identidad.rol !== "admin" && (estado !== "cancelled" || cita.userId !== identidad.usuario.uid)) {
-            throw new HttpsError("permission-denied", "No puedes modificar esta cita.");
+            throw new HttpsError("permission-denied", "No pots modificar aquesta cita.");
         }
         if (cita.status === estado) {
             return {
@@ -95,16 +95,16 @@ export async function cambiarEstado(identidad, datos, estado) {
             };
         }
         if (cita.status !== "confirmed") {
-            throw new HttpsError("failed-precondition", "La cita no admite ese cambio. Los datos antiguos requieren revision.");
+            throw new HttpsError("failed-precondition", "La cita no admet aquest canvi. Les dades antigues necessiten una revisió.");
         }
         if (identidad.rol !== "admin" && (!cita.startAt?.toDate || cita.startAt.toDate() <= new Date())) {
-            throw new HttpsError("failed-precondition", "Solo puedes cancelar citas futuras.");
+            throw new HttpsError("failed-precondition", "Només pots cancel·lar cites futures.");
         }
         const configuracion = await obtenerConfiguracionAgenda(transaccion);
         const locks = [];
         for (const clave of cita.lockKeys || []) {
             if (typeof clave !== "string" || clave.includes("/")) {
-                throw new HttpsError("failed-precondition", "Ocupacion antigua no valida.");
+                throw new HttpsError("failed-precondition", "L’ocupació antiga no és vàlida.");
             }
             locks.push(await transaccion.get(baseDatos.doc("bookingLocks/" + clave)));
         }

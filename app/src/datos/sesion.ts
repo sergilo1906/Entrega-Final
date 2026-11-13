@@ -33,7 +33,7 @@ function estadoVacio(estado: EstadoSesion["estado"], mensaje = ""): EstadoSesion
 }
 function limpiarDatosTemporalesSesion(): void {
     try {
-        // Solo se eliminan datos temporales de esta aplicación, nunca claves ajenas.
+        // Netegem només les dades temporals d’aquesta aplicació.
         for (let indice = sessionStorage.length - 1; indice >= 0; indice--) {
             const clave = sessionStorage.key(indice);
             if (clave?.startsWith("barberpro-")) {
@@ -41,16 +41,17 @@ function limpiarDatosTemporalesSesion(): void {
             }
         }
     }
-    catch { /* La sesión también puede cerrarse con el almacenamiento deshabilitado. */
+    catch { /* També podem sortir si l’emmagatzematge està desactivat. */
     }
 }
 function exigirServicios() {
     const servicios = obtenerServiciosFirebase();
     if (!servicios) {
-        throw new Error("Firebase no configurado.");
+        throw new Error("Firebase no està configurat.");
     }
     return servicios;
 }
+// Carreguem el token i comprovem que coincideixi amb el perfil actual.
 async function cargarUsuario(usuario: User | null): Promise<void> {
     const revision = ++revisionSesion;
     cancelarPerfil?.();
@@ -68,23 +69,23 @@ async function cargarUsuario(usuario: User | null): Promise<void> {
         }
         const rol = normalizarRol(token.claims.role);
         if (!rol) {
-            throw new Error("Rol no reconocido.");
+            throw new Error("El rol no es reconeix.");
         }
         const usuarioSesion = {
             uid: usuario.uid, correo: usuario.email || "", correoVerificado: usuario.emailVerified,
             nombre: usuario.displayName || "", rol, versionRol: Number(token.claims.roleVersion || 0),
         };
-        // Solo existe un listener del perfil actual; la revisión descarta respuestas de otra sesión.
+        // Escoltem només el perfil actual i descartem respostes d’una altra sessió.
         cancelarPerfil = observarPerfilUsuario(usuario.uid, (perfil) => {
             if (revision !== revisionSesion) {
                 return;
             }
             if (!perfil && rol !== "client") {
-                publicarEstado(estadoVacio("error", "No se pudieron confirmar tus permisos. Contacta con un administrador."));
+                publicarEstado(estadoVacio("error", "No s’han pogut confirmar els permisos. Contacta amb l’administrador."));
                 return;
             }
             if (perfil && (perfil.role !== rol || (perfil.roleVersion || 0) !== usuarioSesion.versionRol)) {
-                publicarEstado(estadoVacio("error", "Tus permisos han cambiado. Actualiza la pagina o vuelve a iniciar sesion."));
+                publicarEstado(estadoVacio("error", "Els permisos han canviat. Actualitza la pàgina o torna a iniciar sessió."));
                 const cambioPermisos = usuario.uid + ":" + perfil.role + ":" + (perfil.roleVersion || 0);
                 if (ultimoCambioPermisos !== cambioPermisos) {
                     ultimoCambioPermisos = cambioPermisos;
@@ -100,23 +101,24 @@ async function cargarUsuario(usuario: User | null): Promise<void> {
             if (revision !== revisionSesion) {
                 return;
             }
-            // Se permite recuperar el perfil; un error no concede acceso al personal.
+            // Un error en carregar el perfil no dona permisos d’administració.
             if (rol !== "client") {
-                publicarEstado(estadoVacio("error", "No se pudieron comprobar tus permisos. Vuelve a iniciar sesion."));
+                publicarEstado(estadoVacio("error", "No s’han pogut comprovar els permisos. Torna a iniciar sessió."));
             }
             else {
                 publicarEstado({
-                    estado: "autenticado", usuario: usuarioSesion, perfil: null, errorPerfil: true, mensaje: "No se pudieron cargar tus datos."
+                    estado: "autenticado", usuario: usuarioSesion, perfil: null, errorPerfil: true, mensaje: "No s’han pogut carregar les teves dades."
                 });
             }
         });
     }
     catch {
         if (revision === revisionSesion) {
-            publicarEstado(estadoVacio("error", "No se pudo comprobar la sesion. Vuelve a iniciar sesion."));
+            publicarEstado(estadoVacio("error", "No s’ha pogut comprovar la sessió. Torna a iniciar sessió."));
         }
     }
 }
+// Escoltem la sessió i la refresquem en tornar a la finestra.
 function iniciarObservacion(): void {
     if (iniciado) {
         return;
@@ -125,7 +127,7 @@ function iniciarObservacion(): void {
     try {
         const servicios = obtenerServiciosFirebase();
         if (!servicios) {
-            publicarEstado(estadoVacio("desactivado", "La autenticacion esta desactivada. Consulta la configuracion en README."));
+            publicarEstado(estadoVacio("desactivado", "L’accés no està configurat. Revisa la configuració de l’aplicació."));
             return;
         }
         onIdTokenChanged(servicios.autenticacion, (usuario) => {
@@ -133,7 +135,7 @@ function iniciarObservacion(): void {
         }, () => {
             revisionSesion++;
             cancelarPerfil?.();
-            publicarEstado(estadoVacio("error", "No se pudo comprobar la sesion. Vuelve a iniciar sesion."));
+            publicarEstado(estadoVacio("error", "No s’ha pogut comprovar la sessió. Torna a iniciar sessió."));
         });
         window.addEventListener("focus", () => {
             void actualizarUsuarioSesion().catch(() => {
@@ -146,9 +148,10 @@ function iniciarObservacion(): void {
         });
     }
     catch {
-        publicarEstado(estadoVacio("error", "No se pudo preparar la autenticacion. Revisa la configuracion."));
+        publicarEstado(estadoVacio("error", "No s’ha pogut preparar l’accés. Revisa la configuració."));
     }
 }
+// Avisem cada pantalla quan canvia la sessió.
 export function observarSesion(recibir: (estado: EstadoSesion) => void): () => void {
     suscriptores.add(recibir);
     recibir(estadoSesion);
@@ -160,6 +163,7 @@ export function observarSesion(recibir: (estado: EstadoSesion) => void): () => v
 export function obtenerUsuarioActual(): EstadoSesion {
     return estadoSesion;
 }
+// Esperem que acabi la càrrega abans de prendre decisions d’accés.
 export function esperarEstadoSesion(): Promise<EstadoSesion> {
     iniciarObservacion();
     if (estadoSesion.estado !== "cargando") {
@@ -175,10 +179,12 @@ export function esperarEstadoSesion(): Promise<EstadoSesion> {
         suscriptores.add(recibir);
     });
 }
+// Iniciem sessió amb Auth i actualitzem el token i el perfil.
 export async function iniciarSesion(correo: string, contrasena: string): Promise<void> {
     await signInWithEmailAndPassword(exigirServicios().autenticacion, correo, contrasena);
     await actualizarUsuarioSesion();
 }
+// Creem el compte i distingim una alta parcial d’un correu no enviat.
 export async function registrarUsuario(correo: string, contrasena: string, nombre: string, telefono: string) {
     const credencial = await createUserWithEmailAndPassword(exigirServicios().autenticacion, correo, contrasena);
     try {
@@ -196,6 +202,7 @@ export async function registrarUsuario(correo: string, contrasena: string, nombr
         return { perfilCreado: true, correoEnviado: false };
     }
 }
+// Refresquem el compte i el token sense encadenar actualitzacions repetides.
 export async function actualizarUsuarioSesion(): Promise<void> {
     if (actualizacion) {
         return actualizacion;
@@ -212,7 +219,7 @@ export async function actualizarUsuarioSesion(): Promise<void> {
         catch (error) {
             revisionSesion++;
             cancelarPerfil?.();
-            publicarEstado(estadoVacio("error", "No se pudo actualizar la sesion. Vuelve a iniciar sesion."));
+            publicarEstado(estadoVacio("error", "No s’ha pogut actualitzar la sessió. Torna a iniciar sessió."));
             throw error;
         }
         if (exigirServicios().autenticacion.currentUser?.uid === usuario.uid) {
@@ -223,8 +230,9 @@ export async function actualizarUsuarioSesion(): Promise<void> {
     });
     return actualizacion;
 }
+// Netegem les dades privades i tanquem la sessió d’Auth.
 export async function cerrarSesion(): Promise<void> {
-    // Vaciar antes de esperar la red impide conservar datos privados de la sesión anterior.
+    // Buidem les dades abans d’esperar la xarxa perquè no quedin visibles.
     revisionSesion++;
     cancelarPerfil?.();
     limpiarDatosTemporalesSesion();
@@ -234,20 +242,22 @@ export async function cerrarSesion(): Promise<void> {
         publicarEstado(estadoVacio("invitado"));
     }
     catch (error) {
-        publicarEstado(estadoVacio("error", "No se pudo cerrar sesion. Vuelve a intentarlo."));
+        publicarEstado(estadoVacio("error", "No s’ha pogut tancar la sessió. Torna-ho a provar."));
         throw error;
     }
 }
 export function obtenerUrlVerificacion(): string {
     return window.location.origin + "/verify";
 }
+// Enviem la verificació amb una adreça de retorn del mateix lloc.
 export async function enviarVerificacion(): Promise<void> {
     const usuario = exigirServicios().autenticacion.currentUser;
     if (!usuario) {
-        throw new Error("Sesion requerida.");
+        throw new Error("Cal iniciar sessió.");
     }
     await sendEmailVerification(usuario, { url: obtenerUrlVerificacion(), handleCodeInApp: false });
 }
+// Apliquem el codi d’Auth i tornem a comprovar la sessió.
 export async function aplicarVerificacion(codigo: string): Promise<void> {
     await applyActionCode(exigirServicios().autenticacion, codigo);
     await actualizarUsuarioSesion();

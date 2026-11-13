@@ -4,10 +4,11 @@ import type { ConfiguracionAgenda } from "../modelos/aplicacion";
 function baseDatos() {
     const servicios = obtenerServiciosFirebase();
     if (!servicios) {
-        throw new Error("Firebase no configurado.");
+        throw new Error("Firebase no està configurat.");
     }
     return servicios.baseDatos;
 }
+// Llegim l’horari compartit i el nom del professional.
 export async function obtenerConfiguracionAgenda(): Promise<ConfiguracionAgenda> {
     const documento = await getDoc(doc(baseDatos(), "config", "app"));
     if (!documento.exists()) {
@@ -15,10 +16,10 @@ export async function obtenerConfiguracionAgenda(): Promise<ConfiguracionAgenda>
     }
     const datos = documento.data();
     if (!Array.isArray(datos.days) || datos.days.length !== 7) {
-        throw new Error("El horario anterior requiere una revision del administrador.");
+        throw new Error("L’horari anterior necessita una revisió de l’administrador.");
     }
     new Intl.DateTimeFormat("es", { timeZone: datos.timezone }).format();
-    return { timezone: datos.timezone, days: datos.days, professionalName: String(datos.professionalName || "Profesional principal") };
+    return { timezone: datos.timezone, days: datos.days, professionalName: String(datos.professionalName || "Professional principal") };
 }
 export async function obtenerDiasCerrados(): Promise<string[]> {
     return (await getDocs(collection(baseDatos(), "closedDays"))).docs.map(d => d.id).sort();

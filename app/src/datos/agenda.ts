@@ -1,10 +1,11 @@
 import { collection, getDocs, query, where, type QueryConstraint } from "firebase/firestore";
 import { obtenerServiciosFirebase } from "./firebase";
 import type { Cita } from "../modelos/agenda";
+// Consultem només les cites que compleixen el filtre autoritzat.
 async function consultarCitas(condicion: QueryConstraint): Promise<Cita[]> {
     const servicios = obtenerServiciosFirebase();
     if (!servicios) {
-        throw new Error("Firebase no configurado.");
+        throw new Error("Firebase no està configurat.");
     }
     const documentos = await getDocs(query(collection(servicios.baseDatos, "bookings"), condicion));
     return documentos.docs.map(documento => ({ ...documento.data(), id: documento.id } as Cita))

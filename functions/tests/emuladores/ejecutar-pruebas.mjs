@@ -11,6 +11,7 @@ const accesosDemo = path.join(tmpdir(), "m13-demo-e2e-" + crypto.randomUUID() + 
 const env = {
     ...process.env, M13_DEMO_BROWSER_ACCESOS: accesosDemo, PUBLIC_FIREBASE_MODE: "local", PUBLIC_USE_FIREBASE_EMULATORS: "1", PUBLIC_USE_FUNCTIONS_EMULATOR: "1", PUBLIC_FIREBASE_API_KEY: "demo-api-key", PUBLIC_FIREBASE_AUTH_DOMAIN: "localhost", PUBLIC_FIREBASE_PROJECT_ID: "demo-barberpro-m13", PUBLIC_FIREBASE_APP_ID: "1:123456789:web:demo", PUBLIC_APP_URL: "http://127.0.0.1:4331"
 };
+// Aturem la regressió si una comprovació falla o queda interrompuda.
 function ejecutar(args, cwd = raiz) {
     const r = spawnSync(process.execPath, args, {
         cwd, env, stdio: "inherit"

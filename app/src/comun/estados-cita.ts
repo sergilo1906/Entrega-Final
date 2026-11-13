@@ -3,10 +3,10 @@ export function obtenerEtiquetaEstadoCliente(estado: string): string {
         return "Confirmada";
     }
     if (estado === "cancelled") {
-        return "Cancelada";
+        return "Cancel·lada";
     }
     if (estado === "done") {
-        return "Hecha";
+        return "Completada";
     }
-    return "Historica (solo lectura): " + (estado || "sin estado");
+    return "Històrica (només lectura): " + (estado || "sense estat");
 }

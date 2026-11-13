@@ -30,7 +30,7 @@ formulario?.addEventListener("submit", async (evento) => {
     const confirmacion = String(campos.get("password2") || "");
     let errorValidacion = comprobarContacto(nombre, telefono) || comprobarFormulario(correo, contrasena);
     if (!errorValidacion && contrasena !== confirmacion) {
-        errorValidacion = "Las contrasenas no coinciden.";
+        errorValidacion = "Les contrasenyes no coincideixen.";
     }
     if (errorValidacion) {
         mensaje.textContent = errorValidacion;
@@ -38,7 +38,7 @@ formulario?.addEventListener("submit", async (evento) => {
     }
     solicitudEnCurso = true;
     bloquearFormulario(formulario, true);
-    mensaje.textContent = "Creando cuenta...";
+    mensaje.textContent = "Creant el compte…";
     try {
         const resultado = await registrarUsuario(correo, contrasena, nombre, telefono);
         if (!resultado.perfilCreado) {

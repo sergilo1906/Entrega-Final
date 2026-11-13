@@ -161,7 +161,7 @@ test("claims desactualizados dejan de autorizar las funciones y las reglas", asy
         serviceId: "x", name: "X", durationMin: 30, price: 1, active: true
     }));
     await assert.rejects(getDoc(doc(admin.datos, "services/corte")));
-    // Restaurar el actor sin renovar su token para no alterar las demas pruebas.
+    // Restaurem el compte sense renovar el token per no alterar les altres proves.
     await autenticacion.setCustomUserClaims(cuentas.admin, { role: "admin", roleVersion: 0 });
     await baseDatos.doc("users/" + cuentas.admin).update({ role: "admin", roleVersion: 0 });
 });

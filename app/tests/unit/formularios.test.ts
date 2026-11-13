@@ -16,6 +16,6 @@ describe("formularios de cuentas", () => {
     });
     it("no distingue una cuenta inexistente de una clave equivocada", () => {
         expect(explicarErrorAcceso({ code: "auth/user-not-found" })).toBe(explicarErrorAcceso({ code: "auth/wrong-password" }));
-        expect(explicarErrorAcceso({ code: "auth/network-request-failed" })).toContain("conexion");
+        expect(explicarErrorAcceso({ code: "auth/network-request-failed" })).toContain("connexió");
     });
 });
