@@ -1,5 +1,7 @@
+// Funcions per treballar amb dates segons l’hora de la barberia, encara que el navegador sigui en un altre país.
 import { fromZonedTime } from "date-fns-tz";
 import type { Cita } from "../modelos/agenda";
+// Comprovar que la data tingui format correcte i existeixi al calendari.
 export function esFechaCalendarioValida(fecha: string): boolean {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
         return false;
@@ -7,6 +9,7 @@ export function esFechaCalendarioValida(fecha: string): boolean {
     const instante = new Date(fecha + "T00:00:00Z");
     return Number.isFinite(instante.getTime()) && instante.toISOString().slice(0, 10) === fecha;
 }
+// Agafar l’inici de la cita; si és antiga, calcular-lo amb la zona de la barberia.
 export function obtenerInicioCita(cita: Pick<Cita, "startAt" | "dateStr" | "timeStr">, zona: string): Date {
     if (cita.startAt && typeof cita.startAt.toDate === "function") {
         return cita.startAt.toDate();
@@ -25,7 +28,7 @@ export function obtenerInicioCita(cita: Pick<Cita, "startAt" | "dateStr" | "time
     }
     return instante;
 }
-// Calculem el dia segons la zona de la barberia.
+// Retornar el dia que és a la barberia, no el que marca l’ordinador.
 export function formatearFechaNegocio(zona: string, instante = new Date()): string {
     const partes = new Intl.DateTimeFormat("en-CA", {
         timeZone: zona, year: "numeric", month: "2-digit", day: "2-digit"
@@ -46,6 +49,7 @@ export function formatearFechaNegocio(zona: string, instante = new Date()): stri
     }
     return anio + "-" + mes + "-" + dia;
 }
+// Sumar dies a una data, també si canviem de mes o d’any.
 export function sumarDiasCalendario(fecha: string, dias: number): string {
     const instante = new Date(fecha + "T00:00:00Z");
     instante.setUTCDate(instante.getUTCDate() + dias);

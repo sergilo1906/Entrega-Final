@@ -1,3 +1,4 @@
+// Recollim les dades del registre i comprovem que les dues contrasenyes coincideixin.
 import { observarSesion, registrarUsuario } from "../../datos/sesion";
 import { obtenerDestinoInicial } from "../../comun/permisos";
 import { explicarErrorAcceso } from "../../comun/errores";
@@ -22,6 +23,7 @@ formulario?.addEventListener("submit", async (evento) => {
     if (!formulario || !mensaje || solicitudEnCurso) {
         return;
     }
+    // FormData recull els valors dels inputs que tenen un name al formulari.
     const campos = new FormData(formulario);
     const nombre = String(campos.get("name") || "").trim();
     const telefono = String(campos.get("phone") || "").trim();
@@ -29,6 +31,7 @@ formulario?.addEventListener("submit", async (evento) => {
     const contrasena = String(campos.get("password") || "");
     const confirmacion = String(campos.get("password2") || "");
     let errorValidacion = comprobarContacto(nombre, telefono) || comprobarFormulario(correo, contrasena);
+    // Abans de crear el compte comprovem que les dues contrasenyes siguin iguals.
     if (!errorValidacion && contrasena !== confirmacion) {
         errorValidacion = "Les contrasenyes no coincideixen.";
     }
@@ -41,6 +44,7 @@ formulario?.addEventListener("submit", async (evento) => {
     mensaje.textContent = "Creant el compte…";
     try {
         const resultado = await registrarUsuario(correo, contrasena, nombre, telefono);
+        // Si només s’ha pogut crear el compte, obrim Perfil per poder completar les dades.
         if (!resultado.perfilCreado) {
             window.location.assign("/perfil?alta=incompleta");
         }

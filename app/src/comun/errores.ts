@@ -1,10 +1,12 @@
+// Canviem els errors de Firebase per missatges que es puguin entendre a la web.
+// Agafar el codi de l’error; si no en té, retornar text buit.
 export function obtenerCodigoError(error: unknown): string {
     if (typeof error === "object" && error !== null && "code" in error) {
         return String(error.code);
     }
     return "";
 }
-// Convertim els errors d’accés en missatges que no revelen si un compte existeix.
+// Explicar per què no s’ha pogut entrar, sense revelar si un correu existeix.
 export function explicarErrorAcceso(error: unknown): string {
     const codigo = obtenerCodigoError(error);
     if (["auth/invalid-credential", "auth/wrong-password", "auth/user-not-found"].includes(codigo)) {
@@ -30,14 +32,14 @@ export function explicarErrorAcceso(error: unknown): string {
     }
     return "No s’ha pogut completar l’operació. Torna-ho a provar.";
 }
-// Expliquem què pot fer l’usuari si no arriba la verificació.
+// Avisar què pot fer l’usuari si no s’envia la verificació.
 export function explicarErrorVerificacion(error: unknown): string {
     if (obtenerCodigoError(error) === "auth/too-many-requests") {
         return "Has demanat massa correus. Espera un minut i torna-ho a provar.";
     }
     return "No s’ha pogut enviar el correu de verificació. Torna-ho a provar des del perfil.";
 }
-// Mostrem un error de reserva sense detalls interns del servidor.
+// Mostrar un missatge entenedor quan falla una reserva.
 export function explicarErrorReserva(error: unknown): string {
     const codigo = obtenerCodigoError(error);
     if (codigo === "functions/already-exists") {
@@ -57,11 +59,11 @@ export function explicarErrorReserva(error: unknown): string {
     }
     return "No s’ha pogut confirmar la resposta. Revisa les teves cites o reintenta la mateixa sol·licitud.";
 }
-// Distingim un rebuig confirmat d’una resposta que no ha arribat.
+// Mirar si no sabem el resultat o si el servidor ja ha rebutjat la reserva.
 export function esRespuestaReservaIncierta(error: unknown): boolean {
     return !["functions/permission-denied", "functions/unauthenticated", "functions/not-found", "functions/already-exists", "functions/invalid-argument", "functions/failed-precondition", "functions/resource-exhausted"].includes(obtenerCodigoError(error));
 }
-// Expliquem els errors de gestió sense mostrar missatges tècnics.
+// Explicar un error dels formularis de gestió sense ensenyar detalls interns.
 export function explicarErrorAdministracion(error: unknown): string {
     const codigo = obtenerCodigoError(error);
     if (codigo.includes("permission-denied") || codigo.includes("unauthenticated")) {

@@ -1,5 +1,7 @@
+// Entrada privada per preparar la mostra a WEB, amb el projecte confirmat i un administrador que ja existeix.
 import fs from "node:fs";
 const args = process.argv.slice(2);
+// Buscar un argument de la comanda i avisar si no té valor.
 function leer(nombre) {
     const indice = args.indexOf(nombre);
     if (indice < 0 || !args[indice + 1] || args[indice + 1].startsWith("--")) {
@@ -18,6 +20,7 @@ if (process.env.FIREBASE_AUTH_EMULATOR_HOST || process.env.FIRESTORE_EMULATOR_HO
 if (process.env.GCLOUD_PROJECT && process.env.GCLOUD_PROJECT !== proyecto) {
     throw new Error("GCLOUD_PROJECT apunta a otro proyecto.");
 }
+// Sense l’opció explícita no creem cap compte ni cita al projecte real.
 if (!args.includes("--aplicar")) {
     console.log("Simulacion sin escrituras: seis clientes ficticios, seis servicios y doce citas en " + proyecto + ". Requiere ADC privado, --admin-uid, --credenciales-salida y --aplicar.");
 }

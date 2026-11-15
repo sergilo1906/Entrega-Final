@@ -1,3 +1,4 @@
+// Comprovem que la mostra es pugui preparar més d’una vegada sense duplicar comptes ni cites.
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
@@ -18,6 +19,7 @@ test("demo catalana: doce citas coherentes, doce cuentas locales, aislamiento y 
     const aplicaciones = [];
     try {
         const primero = await prepararDemostracion({ archivoAccesos });
+        // Preparem la mostra dues vegades per assegurar que no es dupliquin les dades.
         const segundo = await prepararDemostracion({ archivoAccesos });
         assert.equal(primero.citas, 12);
         assert.equal(segundo.citas, 12);

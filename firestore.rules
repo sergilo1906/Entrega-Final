@@ -1,9 +1,14 @@
+// Les regles controlen les peticions del navegador. Les Functions amb Admin SDK han de validar els permisos al seu propi codi.
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    // Comprovar que la petició tingui un compte identificat.
     function tieneSesion() { return request.auth != null; }
+    // Llegir el rol del token; si falta, considerar el compte client.
     function rolToken() { return request.auth.token.get('role', 'client'); }
+    // Llegir la versió dels permisos amb què s’ha iniciat aquesta sessió.
     function versionToken() { return request.auth.token.get('roleVersion', 0); }
+    // Comprovar que el perfil i el token encara tinguin el mateix rol i versió.
     function rolVigente() {
       let perfil = /databases/$(database)/documents/users/$(request.auth.uid);
       return rolToken() in ['client', 'admin'] && (
@@ -11,15 +16,20 @@ service cloud.firestore {
         (exists(perfil) && get(perfil).data.role == rolToken() && get(perfil).data.get('roleVersion', 0) == versionToken())
       );
     }
+    // Exigir sessió, correu verificat i permisos actuals per consultar dades de negoci.
     function operativo() { return tieneSesion() && request.auth.token.email_verified == true && rolVigente(); }
+    // A més de les comprovacions normals, exigir el rol admin.
     function administrador() { return operativo() && rolToken() == 'admin'; }
+    // Limitar els camps de contacte que pot guardar l’usuari.
     function contactoValido() {
       return request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 100
         && request.resource.data.phone is string && request.resource.data.phone.size() <= 30;
     }
+    // Cada compte consulta el seu perfil i només pot editar nom i telèfon.
     match /users/{uid} {
       allow get: if tieneSesion() && request.auth.uid == uid;
       allow list, delete: if false;
+      // Una alta des del navegador sempre és client i no pot triar permisos d’administrador.
       allow create: if tieneSesion() && request.auth.uid == uid
         && request.resource.data.keys().hasOnly(['name','phone','email','role','roleVersion','createdAt','updatedAt'])
         && contactoValido() && request.resource.data.email == request.auth.token.email
@@ -30,10 +40,13 @@ service cloud.firestore {
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name','phone','updatedAt'])
         && request.resource.data.updatedAt == request.time;
     }
+    // Les dades de negoci es llegeixen amb permís, però les escriuen les Functions.
     match /services/{id} { allow read: if operativo(); allow write: if false; }
     match /config/{id} { allow read: if operativo(); allow write: if false; }
     match /closedDays/{id} { allow read: if administrador(); allow write: if false; }
+    // El client només pot llegir cites amb el seu userId; l’administrador pot veure l’agenda.
     match /bookings/{id} { allow read: if operativo() && (administrador() || resource.data.userId == request.auth.uid); allow write: if false; }
+    // Tot allò que no hem permès expressament queda denegat.
     match /{documento=**} { allow read, write: if false; }
   }
 }

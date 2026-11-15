@@ -1,3 +1,4 @@
+// Mostrem el compte actual i deixem canviar el nom i el telèfon, reenviar el correu o sortir.
 import { cerrarSesion, enviarVerificacion, observarSesion, obtenerUsuarioActual, esperarEstadoSesion } from "../../datos/sesion";
 import { crearPerfilUsuario, guardarPerfilUsuario } from "../../datos/personas";
 import { obtenerEtiquetaRol } from "../../comun/permisos";
@@ -15,18 +16,21 @@ const salir = document.querySelector<HTMLButtonElement>("#perfil-logout");
 const mensaje = document.getElementById("perfil-msg");
 let guardando = false;
 let cerrando = false;
+// Si s’han editat camps, no els sobreescrivim perquè arribi una actualització del perfil.
 let perfilEditado = false;
 let ultimoUid = "";
 let revisionIdentidad = 0;
-// Descartem respostes d’un compte que ja no està actiu.
+// Comprovar que no hem canviat de compte mentre esperàvem una resposta.
 function mismaIdentidad(uid: string, revision: number): boolean {
     return revision === revisionIdentidad && obtenerUsuarioActual().usuario?.uid === uid;
 }
+// Posar el text al missatge del perfil.
 function mostrarMensaje(texto: string): void {
     if (mensaje) {
         mensaje.textContent = texto;
     }
 }
+// Mostrar si el correu està verificat i si cal el botó de reenviar.
 function mostrarEstadoVerificacion(verificado: boolean): void {
     if (!verificacion) {
         return;
@@ -47,6 +51,7 @@ observarSesion((estado) => {
         return;
     }
     const usuario = estado.usuario;
+    // En sortir del compte, buidem el contacte i els avisos de la pantalla.
     if (estado.estado !== "autenticado" || !usuario) {
         revisionIdentidad++;
         if (correo) {
@@ -93,6 +98,7 @@ observarSesion((estado) => {
         rol.textContent = obtenerEtiquetaRol(usuario.rol);
     }
     mostrarEstadoVerificacion(usuario.correoVerificado);
+    // Carreguem els valors si no hi ha una edició pendent o acabem de canviar de compte.
     if (!perfilEditado || ultimoUid !== usuario.uid) {
         if (nombre) {
             nombre.value = estado.perfil?.name || usuario.nombre;
@@ -109,6 +115,7 @@ observarSesion((estado) => {
         mostrarMensaje("Completa les dades i prem Desa els canvis per acabar la configuració inicial.");
     }
 });
+// En prémer Desa, validem el contacte i enviem els canvis del compte actual.
 guardar?.addEventListener("click", async () => {
     if (guardando || !nombre || !telefono) {
         return;
@@ -125,6 +132,7 @@ guardar?.addEventListener("click", async () => {
     }
     guardando = true;
     guardar.disabled = true;
+    // Guardem el compte i la revisió d’aquest enviament per no mostrar el resultat en una altra sessió.
     const revision = revisionIdentidad;
     const nuevoNombre = nombre.value;
     const nuevoTelefono = telefono.value;
@@ -135,6 +143,7 @@ guardar?.addEventListener("click", async () => {
         if (!mismaIdentidad(usuario.uid, revision)) {
             return;
         }
+        // Només modifiquem nom i telèfon; el rol no es pot triar en aquest formulari.
         await guardarPerfilUsuario(usuario.uid, nuevoNombre, nuevoTelefono);
         await esperarEstadoSesion();
         if (mismaIdentidad(usuario.uid, revision)) {
@@ -155,6 +164,7 @@ guardar?.addEventListener("click", async () => {
         }
     }
 });
+// El botó de reenviar demana un altre correu de verificació, sense canviar el contacte.
 reenviar?.addEventListener("click", async () => {
     if (reenviar.disabled) {
         return;
@@ -163,6 +173,7 @@ reenviar?.addEventListener("click", async () => {
     if (!uid) {
         return;
     }
+    // Guardem el compte i la revisió d’aquest enviament per no mostrar el resultat en una altra sessió.
     const revision = revisionIdentidad;
     reenviar.disabled = true;
     mostrarMensaje("Enviant el correu de verificació…");
@@ -184,6 +195,7 @@ reenviar?.addEventListener("click", async () => {
         }
     }
 });
+// El botó propi del perfil també tanca la sessió i torna a l’inici.
 salir?.addEventListener("click", async () => {
     if (cerrando) {
         return;

@@ -1,6 +1,8 @@
+// Llegim l’horari habitual, la zona horària i els dies tancats.
 import { doc, getDoc, collection, getDocs } from "firebase/firestore";
 import { obtenerServiciosFirebase } from "./firebase";
 import type { ConfiguracionAgenda } from "../modelos/aplicacion";
+// Obtenir la connexió a Firestore o avisar si Firebase no està configurat.
 function baseDatos() {
     const servicios = obtenerServiciosFirebase();
     if (!servicios) {
@@ -8,7 +10,7 @@ function baseDatos() {
     }
     return servicios.baseDatos;
 }
-// Llegim l’horari compartit i el nom del professional.
+// Llegir l’horari i la zona horària desats a config/app.
 export async function obtenerConfiguracionAgenda(): Promise<ConfiguracionAgenda> {
     const documento = await getDoc(doc(baseDatos(), "config", "app"));
     if (!documento.exists()) {
@@ -21,6 +23,7 @@ export async function obtenerConfiguracionAgenda(): Promise<ConfiguracionAgenda>
     new Intl.DateTimeFormat("es", { timeZone: datos.timezone }).format();
     return { timezone: datos.timezone, days: datos.days, professionalName: String(datos.professionalName || "Professional principal") };
 }
+// Carregar i ordenar les dates en què la barberia està tancada.
 export async function obtenerDiasCerrados(): Promise<string[]> {
     return (await getDocs(collection(baseDatos(), "closedDays"))).docs.map(d => d.id).sort();
 }

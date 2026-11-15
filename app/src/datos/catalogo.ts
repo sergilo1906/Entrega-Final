@@ -1,7 +1,8 @@
+// Carreguem els serveis que es poden reservar i el catàleg que pot editar l’administrador.
 import { collection, getDocs, query, where, orderBy } from "firebase/firestore";
 import { obtenerServiciosFirebase } from "./firebase";
 import type { Servicio, ServicioAdministrable } from "../modelos/agenda";
-// Carreguem els serveis actius amb una durada que es pugui reservar.
+// Carregar els serveis actius que tenen una durada vàlida per reservar.
 export async function obtenerServicios(): Promise<Servicio[]> {
     const servicios = obtenerServiciosFirebase();
     if (!servicios) {
@@ -13,6 +14,7 @@ export async function obtenerServicios(): Promise<Servicio[]> {
         const datos = documento.data();
         const duracion = Number(datos.durationMin ?? 30);
         const precio = Number(datos.price ?? 0);
+        // No oferim serveis amb durades o preus que aquesta versió no pot reservar.
         if (!Number.isInteger(duracion) || ![30, 60].includes(duracion) || !Number.isFinite(precio) || precio < 0) {
             continue;
         }
@@ -20,10 +22,11 @@ export async function obtenerServicios(): Promise<Servicio[]> {
             id: documento.id, name: String(datos.name || "Servei"), durationMin: duracion, price: precio
         });
     }
+    // Ordenem els serveis pel nom abans d’omplir el selector.
     resultado.sort((primero, segundo) => primero.name.localeCompare(segundo.name));
     return resultado;
 }
-// L’administrador pot consultar també els serveis inactius.
+// Carregar tots els serveis perquè l’administrador també pugui editar els inactius.
 export async function obtenerCatalogoCompleto(): Promise<ServicioAdministrable[]> {
     const servicios = obtenerServiciosFirebase();
     if (!servicios) {

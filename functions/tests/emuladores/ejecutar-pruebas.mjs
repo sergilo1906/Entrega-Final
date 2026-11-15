@@ -1,3 +1,4 @@
+// Executem les proves del servidor, compilem LOCAL i després obrim el navegador de prova.
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { readFileSync, existsSync, unlinkSync } from "node:fs";
@@ -11,7 +12,7 @@ const accesosDemo = path.join(tmpdir(), "m13-demo-e2e-" + crypto.randomUUID() + 
 const env = {
     ...process.env, M13_DEMO_BROWSER_ACCESOS: accesosDemo, PUBLIC_FIREBASE_MODE: "local", PUBLIC_USE_FIREBASE_EMULATORS: "1", PUBLIC_USE_FUNCTIONS_EMULATOR: "1", PUBLIC_FIREBASE_API_KEY: "demo-api-key", PUBLIC_FIREBASE_AUTH_DOMAIN: "localhost", PUBLIC_FIREBASE_PROJECT_ID: "demo-barberpro-m13", PUBLIC_FIREBASE_APP_ID: "1:123456789:web:demo", PUBLIC_APP_URL: "http://127.0.0.1:4331"
 };
-// Aturem la regressió si una comprovació falla o queda interrompuda.
+// Executar una comprovació i aturar les proves si acaba amb un error.
 function ejecutar(args, cwd = raiz) {
     const r = spawnSync(process.execPath, args, {
         cwd, env, stdio: "inherit"
@@ -27,6 +28,7 @@ try {
     ejecutar(["node_modules/astro/" + astro.bin.astro, "build"], app);
     ejecutar(["node_modules/@playwright/test/cli.js", "test"], app);
 }
+// Encara que una prova falli, retirem l’arxiu privat temporal d’aquesta execució.
 finally {
     if (existsSync(accesosDemo)) {
         unlinkSync(accesosDemo);

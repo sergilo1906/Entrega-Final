@@ -1,7 +1,9 @@
+// Preparem la connexió amb Firebase. LOCAL fa servir emuladors; WEB es connecta al projecte real.
 import { initializeApp, type FirebaseApp } from "firebase/app";
 import { connectAuthEmulator, initializeAuth, indexedDBLocalPersistence, browserLocalPersistence, inMemoryPersistence, type Auth } from "firebase/auth";
 import { connectFirestoreEmulator, getFirestore, type Firestore } from "firebase/firestore";
 import { connectFunctionsEmulator, getFunctions, type Functions } from "firebase/functions";
+// Aquesta interfície indica les dades necessàries; no conté contrasenyes administratives.
 export interface ConfiguracionFirebase {
     modo: string;
     usarEmuladores: boolean;
@@ -18,7 +20,7 @@ let servicios: {
     baseDatos: Firestore;
     funcionesRemotas: Functions;
 } | null = null;
-// Llegim la configuració pública en compilar, sense claus administratives.
+// Llegir les variables públiques que es van posar en compilar la web.
 export function leerConfiguracionFirebase(): ConfiguracionFirebase {
     return {
         modo: import.meta.env.PUBLIC_FIREBASE_MODE || "desactivado",
@@ -31,7 +33,7 @@ export function leerConfiguracionFirebase(): ConfiguracionFirebase {
         appUrl: import.meta.env.PUBLIC_APP_URL || "",
     };
 }
-// Evitem barrejar els emuladors amb el projecte WEB real.
+// Comprovar que la configuració correspon al lloc on obrim la web.
 export function comprobarConfiguracionFirebase(config: ConfiguracionFirebase, origen: string): string | null {
     if (!config.apiKey || !config.appId || !config.projectId || !config.authDomain) {
         return "La configuració de Firebase és incompleta.";
@@ -43,6 +45,7 @@ export function comprobarConfiguracionFirebase(config: ConfiguracionFirebase, or
     catch {
         return "L’origen no és vàlid.";
     }
+    // LOCAL només s’accepta a localhost amb tots els emuladors i el projecte fictici.
     if (config.modo === "local") {
         if (!config.usarEmuladores || !config.usarEmuladorFunciones || !["localhost", "127.0.0.1"].includes(url.hostname)
             || config.projectId !== "demo-barberpro-m13" || config.authDomain !== "localhost") {
@@ -50,11 +53,13 @@ export function comprobarConfiguracionFirebase(config: ConfiguracionFirebase, or
         }
         return null;
     }
+    // WEB exigeix HTTPS i no pot tenir emuladors activats.
     if (config.modo !== "web" || config.usarEmuladores || config.usarEmuladorFunciones || url.protocol !== "https:"
         || config.projectId.startsWith("demo-") || config.authDomain !== config.projectId + ".firebaseapp.com") {
         return "La configuració WEB no és vàlida.";
     }
     try {
+        // L’origen real de la pàgina ha de coincidir amb l’adreça pública configurada.
         const canonica = new URL(config.appUrl);
         if (canonica.protocol !== "https:" || canonica.origin !== url.origin || canonica.pathname !== "/") {
             return "L’origen no coincideix amb PUBLIC_APP_URL.";
@@ -65,7 +70,7 @@ export function comprobarConfiguracionFirebase(config: ConfiguracionFirebase, or
     }
     return null;
 }
-// Creem els SDK una sola vegada i connectem els emuladors abans d’usar-los.
+// Crear les connexions amb Firebase una sola vegada i reutilitzar-les.
 export function obtenerServiciosFirebase() {
     const config = leerConfiguracionFirebase();
     if (config.modo === "desactivado") {
@@ -75,10 +80,12 @@ export function obtenerServiciosFirebase() {
     if (error) {
         throw new Error(error);
     }
+    // Si ja hem preparat Firebase abans, retornem les connexions existents.
     if (servicios) {
         return servicios;
     }
     const aplicacionFirebase = initializeApp(config, "barberpro-m13");
+    // Provem de conservar la sessió al navegador; si no es pot, la mantenim en memòria.
     const autenticacion = initializeAuth(aplicacionFirebase, { persistence: [indexedDBLocalPersistence, browserLocalPersistence, inMemoryPersistence] });
     const baseDatos = getFirestore(aplicacionFirebase);
     const funcionesRemotas = getFunctions(aplicacionFirebase, "europe-west1");

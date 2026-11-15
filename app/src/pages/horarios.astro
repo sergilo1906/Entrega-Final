@@ -1,4 +1,5 @@
 ---
+// Formularis de l’horari i dels dies tancats. Reutilitzem el mateix HTML per als set dies.
 import DisenoPrincipal from "../layouts/DisenoPrincipal.astro";
 const dias = ["Diumenge", "Dilluns", "Dimarts", "Dimecres", "Dijous", "Divendres", "Dissabte"];
 ---
@@ -9,6 +10,7 @@ const dias = ["Diumenge", "Dilluns", "Dimarts", "Dimecres", "Dijous", "Divendres
     <form id="schedule-form" class="space-y-4">
       <label class="block">Zona horària<input id="schedule-zone" value="Europe/Madrid" required class="w-full border rounded px-3 py-2" /></label>
       <div class="grid gap-3 sm:grid-cols-2">
+        <!-- Recorrem la llista de dies per crear els mateixos camps sense repetir set vegades la plantilla. -->
         {dias.map((dia, indice) => (
           <fieldset data-day={indice} class="border rounded p-3 space-y-2">
             <legend>{dia}</legend>

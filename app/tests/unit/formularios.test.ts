@@ -1,6 +1,8 @@
+// Provem camps buits, dades massa llargues i missatges d’accés sense mostrar dades d’altres comptes.
 import { describe, expect, it } from "vitest";
 import { comprobarContacto, comprobarCorreo, comprobarFormulario } from "../../src/comun/formularios";
 import { explicarErrorAcceso } from "../../src/comun/errores";
+// Cada it és un cas de prova. expect comprova el resultat; si no coincideix, la prova falla.
 describe("formularios de cuentas", () => {
     it("rechaza campos vacios, correo invalido y contrasena corta", () => {
         expect(comprobarFormulario("", "")).not.toBe("");

@@ -1,4 +1,5 @@
 ---
+// Selectors i contenidors de reserva. El mòdul reservar-cita els omple amb dades de Firebase.
 import DisenoPrincipal from "../layouts/DisenoPrincipal.astro";
 ---
 <DisenoPrincipal title="Reserva una cita" noindex>
@@ -13,6 +14,7 @@ import DisenoPrincipal from "../layouts/DisenoPrincipal.astro";
 <p class="text-xs text-gray-600">Hores de la zona de la barberia: <span id="booking-zone"></span>. Reserves amb un màxim de 30 dies d’antelació.</p>
 <p id="slots-msg" role="status" aria-live="polite" class="text-sm text-gray-600"></p>
 <div id="slots-list" class="grid gap-2 sm:grid-cols-3"></div>
+<!-- Aquest resum només es mostra quan coneixem el resultat de la sol·licitud. -->
 <div id="booking-success" class="hidden rounded border border-green-300 bg-green-50 p-3 text-sm">
   <p id="booking-summary"></p><a href="/mis-citas" class="text-blue-700 underline">Consulta les meves cites</a>
 </div>

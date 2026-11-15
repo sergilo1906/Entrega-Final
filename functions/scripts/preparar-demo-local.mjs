@@ -1,3 +1,4 @@
+// Entrada per crear la mostra local. Les contrasenyes aleatòries es guarden fora del projecte.
 import { homedir } from "node:os";
 import path from "node:path";
 const entorno = {

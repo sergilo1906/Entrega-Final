@@ -1,3 +1,4 @@
+// Preparem el selector de serveis, consultem hores i enviem la reserva escollida.
 import { observarAreaAutorizada, type ContextoAutorizado } from "../../comun/permisos";
 import { obtenerServicios } from "../../datos/catalogo";
 import { obtenerConfiguracionAgenda } from "../../datos/configuracion";
@@ -5,6 +6,8 @@ import { consultarDisponibilidad, solicitarReserva } from "../../datos/funciones
 import { formatearFechaNegocio, sumarDiasCalendario } from "../../comun/fechas";
 import { explicarErrorReserva, esRespuestaReservaIncierta } from "../../comun/errores";
 import type { SolicitudReserva } from "../../modelos/agenda";
+// Agafem els controls de l’HTML per llegir la selecció i escriure el resultat.
+// El ! final indica a TypeScript que aquest control existeix en aquesta pàgina.
 const servicio = document.querySelector<HTMLSelectElement>("#service-select")!;
 const fecha = document.querySelector<HTMLInputElement>("#date-select")!;
 const lista = document.getElementById("slots-list")!;
@@ -12,13 +15,16 @@ const mensaje = document.getElementById("slots-msg")!;
 const exito = document.getElementById("booking-success")!;
 const resumen = document.getElementById("booking-summary")!;
 const reintentar = document.querySelector<HTMLButtonElement>("#booking-retry")!;
+// Guardem quin compte està fent servir la pantalla i si té una petició en marxa.
 let contexto: ContextoAutorizado | null = null;
 let revision = 0;
 let ocupada = false;
 let pendiente: SolicitudReserva | null = null;
+// Preparar una clau diferent per guardar la sol·licitud de cada usuari.
 function clave() {
     return "barberpro-reserva-" + contexto!.usuario.uid;
 }
+// Guardar la sol·licitud a la pestanya o esborrar-la quan ja s’ha resolt.
 function guardarPendiente() {
     try {
         if (pendiente) {
@@ -31,6 +37,7 @@ function guardarPendiente() {
     catch { /* La sol·licitud es conserva en memòria. */
     }
 }
+// Bloquejar la selecció mentre es guarda o mentre hi ha una reserva amb resultat desconegut.
 function bloquear(valor: boolean) {
     ocupada = valor;
     // Si no sabem el resultat, primer resolem la mateixa sol·licitud.
@@ -41,17 +48,19 @@ function bloquear(valor: boolean) {
         boton.disabled = valor || pendiente !== null;
     });
 }
-// Conservem la sol·licitud fins a saber-ne el resultat per evitar duplicats.
+// Enviar la reserva i conservar la mateixa sol·licitud si encara no en sabem el resultat.
 async function reservar(datos: SolicitudReserva) {
     const actual = contexto;
     if (!actual?.esVigente() || ocupada) {
         return;
     }
+    // Conservem les dades abans d’enviar-les per poder repetir la mateixa petició si falla la resposta.
     pendiente = datos;
     guardarPendiente();
     bloquear(true);
     mensaje.textContent = "Confirmant la reserva…";
     try {
+        // Esperem la resposta real del servidor abans de mostrar la confirmació.
         const resultado = await solicitarReserva(datos);
         if (!actual.esVigente()) {
             return;
@@ -59,6 +68,7 @@ async function reservar(datos: SolicitudReserva) {
         pendiente = null;
         guardarPendiente();
         reintentar.hidden = true;
+        // Un reintent pot retornar una cita que després s’ha cancel·lat; mostrem l’estat que retorna el servidor.
         if (resultado.status === "confirmed") {
             resumen.textContent = "Cita confirmada: " + datos.dateStr + " a les " + datos.timeStr;
         }
@@ -77,6 +87,7 @@ async function reservar(datos: SolicitudReserva) {
             return;
         }
         mensaje.textContent = explicarErrorReserva(error);
+        // Només oferim reintentar la mateixa sol·licitud si encara no en sabem el resultat.
         reintentar.hidden = !esRespuestaReservaIncierta(error);
         if (reintentar.hidden) {
             pendiente = null;
@@ -90,12 +101,13 @@ async function reservar(datos: SolicitudReserva) {
         }
     }
 }
-// Descartem consultes anteriors si canvia el servei o la data.
+// Consultar les hores del servei i la data triats i crear un botó per cada hora lliure.
 async function cargarHoras() {
     const actual = contexto;
     if (!actual?.esVigente() || ocupada) {
         return;
     }
+    // Així podem descartar una resposta si el servei o la data han canviat abans que arribi.
     const consulta = ++revision;
     lista.replaceChildren();
     exito.classList.add("hidden");
@@ -115,12 +127,14 @@ async function cargarHoras() {
             return;
         }
         mensaje.textContent = resultado.slots.length ? "Tria una hora per confirmar la cita." : "No hi ha hores disponibles per a aquesta data.";
+        // Recorrem les hores lliures i creem un botó per a cadascuna.
         for (const hueco of resultado.slots) {
             const boton = document.createElement("button");
             boton.type = "button";
             boton.textContent = hueco.timeStr;
             boton.className = "rounded border border-blue-300 px-3 py-2 hover:bg-blue-50";
             boton.addEventListener("click", () => void reservar({
+                // Cada intenció nova té un requestId; en reintentar conservem aquest mateix valor.
                 ...datos, timeStr: hueco.timeStr, requestId: crypto.randomUUID()
             }));
             lista.append(boton);
@@ -132,6 +146,8 @@ async function cargarHoras() {
         }
     }
 }
+// Canviar servei o data torna a consultar les hores. El botó de reintentar conserva la petició anterior.
+// void indica que aquí no utilitzem el valor retornat; la mateixa funció gestiona la resposta i els errors.
 servicio.addEventListener("change", () => void cargarHoras());
 fecha.addEventListener("change", () => void cargarHoras());
 reintentar.addEventListener("click", () => {
@@ -143,6 +159,7 @@ observarAreaAutorizada(["client", "admin"], actual => {
     contexto = actual;
     void (async () => {
         try {
+            // Carreguem catàleg i configuració alhora perquè són dues lectures independents.
             const [catalogo, config] = await Promise.all([obtenerServicios(), obtenerConfiguracionAgenda()]);
             if (!actual.esVigente()) {
                 return;
@@ -158,6 +175,7 @@ observarAreaAutorizada(["client", "admin"], actual => {
             mensaje.textContent = catalogo.length ? "Tria un servei i una data." : "No hi ha serveis actius.";
             bloquear(false);
             try {
+                // En recarregar la pestanya podem recuperar una sol·licitud que havia quedat sense resposta.
                 const guardada = JSON.parse(sessionStorage.getItem(clave()) || "null");
                 if (guardada && typeof guardada.serviceId === "string" && typeof guardada.dateStr === "string" && typeof guardada.timeStr === "string" && typeof guardada.requestId === "string") {
                     pendiente = guardada;

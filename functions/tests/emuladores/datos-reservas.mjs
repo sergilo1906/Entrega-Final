@@ -1,3 +1,4 @@
+// Comptes i dades fictícies per a les proves. Els resets d’aquest fitxer no es poden executar a WEB.
 import { initializeApp, deleteApp } from "firebase/app";
 import { getAuth, connectAuthEmulator, signInWithEmailAndPassword } from "firebase/auth";
 import { getFunctions, connectFunctionsEmulator, httpsCallable } from "firebase/functions";
@@ -9,9 +10,11 @@ export const { baseDatos, autenticacion } = obtenerServiciosAdministrativos();
 export const cuentas = {
     client: "demo-client", otro: "demo-otro", admin: "demo-admin", pendiente: "demo-pendiente", worker: "demo-worker", manager: "demo-manager"
 };
+// Preparar un horari fictici obert per no dependre de quin dia executem la prova.
 export const horario = () => Array.from({ length: 7 }, () => ({ active: true, ranges: [{ start: "09:00", end: "14:00" }, { start: "16:00", end: "20:00" }] }));
+// Calcular la data de prova amb la zona horària del negoci.
 export const fechaPrueba = (dias = 7) => sumarDiasCalendario(formatearFechaZona(new Date(), "Europe/Madrid").slice(0, 10), dias);
-// Creem comptes ficticis i dos rols antics per provar denegacions.
+// Preparar comptes ficticis i també rols antics per comprovar que se’ls denega l’accés.
 export async function prepararCuentas() {
     comprobarEntornoLocal();
     for (const [nombre, uid] of Object.entries(cuentas)) {
@@ -31,7 +34,7 @@ export async function prepararCuentas() {
         });
     }
 }
-// Reiniciem exclusivament les dades dels emuladors per a cada prova.
+// Netejar només les dades dels emuladors i crear l’horari i els serveis de prova.
 export async function prepararAgenda() {
     comprobarEntornoLocal();
     // Esborrem només dades fictícies dels emuladors amb projecte i ports fixos.
@@ -58,7 +61,7 @@ export async function prepararAgenda() {
     }
 }
 let contador = 0;
-// Connectem el SDK client a Auth, Firestore i Functions locals.
+// Connectar el compte fictici als emuladors com ho faria el navegador.
 export async function conectarCuenta(nombre = "client") {
     const app = initializeApp({ projectId: "demo-barberpro-m13", apiKey: "demo-api-key" }, "prueba-" + (++contador));
     const auth = getAuth(app);
@@ -74,6 +77,7 @@ export async function conectarCuenta(nombre = "client") {
         auth, datos, llamar: async (nombre, entrada = {}) => (await httpsCallable(funciones, nombre)(entrada)).data, cerrar: () => deleteApp(app)
     };
 }
+// Preparar una reserva de prova amb un identificador nou i els canvis que indiqui el cas.
 export const solicitud = (cambios = {}) => ({
     serviceId: "corte", dateStr: fechaPrueba(), timeStr: "09:00", requestId: crypto.randomUUID(), ...cambios
 });

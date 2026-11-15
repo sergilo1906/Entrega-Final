@@ -1,3 +1,4 @@
+// Preparem noms, serveis i cites fictícies per ensenyar la web. No reiniciem les dades que ja existeixen.
 import fs from "node:fs";
 import path from "node:path";
 import { randomBytes, createHash } from "node:crypto";
@@ -11,6 +12,7 @@ import { crearReserva, cambiarEstado } from "../src/persistencia-reservas.js";
 import { comprobarIdentidadTransaccion } from "../src/permisos.js";
 import { formatearFechaZona, sumarDiasCalendario, obtenerIntervaloUtc, convertirHoraAMinutos, convertirMinutosAHora } from "../src/fechas.js";
 export const MARCA_DEMO = "m13-entrega-final";
+// Noms ficticis que es faran servir a la mostra, no dades de clients reals.
 export const CLIENTES = [
     { clave: "laia-soler", nombre: "Laia Soler" },
     { clave: "pau-rovira", nombre: "Pau Rovira" },
@@ -19,6 +21,7 @@ export const CLIENTES = [
     { clave: "mariona-valls", nombre: "Mariona Valls" },
     { clave: "nil-casals", nombre: "Nil Casals" },
 ];
+// Aquests sis administradors només es creen en LOCAL, no al projecte WEB.
 export const ADMINISTRADORES_LOCALES = [
     { clave: "marta-roca", nombre: "Marta Roca" },
     { clave: "jordi-vidal", nombre: "Jordi Vidal" },
@@ -48,11 +51,13 @@ export const SERVICIOS = [
     },
 ];
 const raiz = fileURLToPath(new URL("../../", import.meta.url));
+// Convertir el text en un identificador fix: el mateix text dona el mateix resultat.
 const hash = texto => createHash("sha256").update(texto).digest("hex");
+// Preparar l’identificador reservat per a un client de demostració.
 export const uidCliente = clave => "m13-demo-client-" + clave;
+// Preparar un identificador fix per no crear dues vegades la mateixa cita de mostra.
 export const idCitaDemo = (uid, tipo) => hash(JSON.stringify([uid, "m13-demo-" + tipo]));
-// Generem contrasenyes aleatòries i les desem fora del projecte.
-// Llegim els accessos privats només d’un arxiu extern al projecte.
+// Llegir els accessos d’un arxiu privat que ha d’estar fora del projecte.
 function leerAccesos(archivo, proyecto) {
     const destino = path.resolve(archivo);
     if (!path.isAbsolute(archivo) || destino.toLowerCase().startsWith(path.resolve(raiz).toLowerCase() + path.sep)) {
@@ -64,11 +69,12 @@ function leerAccesos(archivo, proyecto) {
     }
     return { destino, datos };
 }
+// Guardar els accessos al seu arxiu privat, mai a Git ni als missatges de consola.
 function guardarAccesos(accesos) {
     fs.mkdirSync(path.dirname(accesos.destino), { recursive: true });
     fs.writeFileSync(accesos.destino, JSON.stringify(accesos.datos, null, 2) + "\n", { mode: 0o600 });
 }
-// Preparem només comptes demo, sense reutilitzar usuaris reals.
+// Crear només el compte fictici que falta i conservar el que ja existeix.
 async function prepararCuenta(persona, rol, accesos) {
     const { autenticacion, baseDatos } = obtenerServiciosAdministrativos();
     const uid = rol === "client" ? uidCliente(persona.clave) : "m13-demo-admin-" + persona.clave;
@@ -90,6 +96,7 @@ async function prepararCuenta(persona, rol, accesos) {
         if (cuenta) {
             throw new Error("Falta el archivo privado de acceso de una cuenta existente; no se restablece su contraseña.");
         }
+        // Generem una contrasenya diferent per compte i la guardem només a l’arxiu privat.
         acceso = {
             uid, nombre: persona.nombre, email, rol, password: randomBytes(24).toString("base64url")
         };
@@ -120,11 +127,12 @@ async function prepararCuenta(persona, rol, accesos) {
         usuario: await autenticacion.getUser(uid), rol, version
     };
 }
-// Conservem l’horari existent; només creem el de mostra si encara no n’hi ha.
+// Preparar serveis i horari de mostra sense substituir l’horari que ja s’està utilitzant.
 async function prepararCatalogoYHorario() {
     const { baseDatos } = obtenerServiciosAdministrativos();
     const referencia = baseDatos.doc("config/app");
     const configuracion = await referencia.get();
+    // Si ja hi ha un horari, el conservem; aquest només és per començar una base buida.
     if (!configuracion.exists) {
         const days = Array.from({ length: 7 }, (_, dia) => ({ active: dia !== 0, ranges: dia === 0 ? [] : [{ start: "09:00", end: "14:00" }, { start: "16:00", end: "20:00" }] }));
         await referencia.create({
@@ -146,7 +154,7 @@ async function prepararCatalogoYHorario() {
         }
     }
 }
-// Busquem hores amb el motor del servidor. L’historial ha d’haver acabat.
+// Buscar una hora lliure vàlida per a una cita futura o una cita de l’historial.
 async function buscarHueco(serviceId, pasado = false) {
     const { baseDatos } = obtenerServiciosAdministrativos();
     const config = await obtenerConfiguracionAgenda();
@@ -186,12 +194,13 @@ async function buscarHueco(serviceId, pasado = false) {
     }
     throw new Error("No hay huecos validos para preparar la demostracion; revisa horario, cierres y datos antiguos.");
 }
-// Preparem les cites futures amb les mateixes operacions de l’aplicació.
+// Crear una cita de mostra amb les mateixes funcions que utilitza la web.
 async function prepararCitaFutura(identidad, servicio, tipo, cancelar = false) {
     const { baseDatos } = obtenerServiciosAdministrativos();
     const id = idCitaDemo(identidad.usuario.uid, tipo);
     const referencia = baseDatos.doc("bookings/" + id);
     const existente = await referencia.get();
+    // Si la cita de mostra ja existeix, no canviem la data ni el seu estat.
     if (existente.exists) {
         if (existente.get("userId") !== identidad.usuario.uid || existente.get("demoTag") !== MARCA_DEMO) {
             throw new Error("La cita existente no pertenece a esta muestra.");
@@ -207,7 +216,7 @@ async function prepararCitaFutura(identidad, servicio, tipo, cancelar = false) {
         await cambiarEstado(identidad, { bookingId: id }, "cancelled");
     }
 }
-// Només l’operador crea l’historial passat, comprovant horari, servei i ocupació.
+// Crear una cita fictícia ja acabada després de comprovar horari i ocupació.
 async function prepararHistorial(identidad, servicio) {
     const { baseDatos } = obtenerServiciosAdministrativos();
     const id = idCitaDemo(identidad.usuario.uid, "historial");
@@ -260,7 +269,7 @@ async function prepararHistorial(identidad, servicio) {
         actualizarControlAgenda(transaccion, baseDatos, config);
     });
 }
-// Preparem una mostra identificable sense duplicar ni reiniciar cites existents.
+// Preparar els comptes, serveis i dotze cites i comprovar el resum final.
 export async function prepararDemostracion({ real = false, adminUid = "", archivoAccesos }) {
     if (!real) {
         comprobarEntornoLocal();
@@ -268,6 +277,7 @@ export async function prepararDemostracion({ real = false, adminUid = "", archiv
     const { autenticacion, baseDatos } = obtenerServiciosAdministrativos();
     const proyecto = process.env.GCLOUD_PROJECT;
     const accesos = leerAccesos(archivoAccesos, proyecto);
+    // Per escriure a WEB comprovem també que l’administrador indicat ja tingui permisos.
     if (real) {
         const administrador = await autenticacion.getUser(adminUid);
         const perfil = await baseDatos.doc("users/" + adminUid).get();
@@ -279,6 +289,7 @@ export async function prepararDemostracion({ real = false, adminUid = "", archiv
     for (const cliente of CLIENTES) {
         identidades.push(await prepararCuenta(cliente, "client", accesos));
     }
+    // Els comptes administradors de prova es preparen exclusivament als emuladors.
     if (!real) {
         for (const administrador of ADMINISTRADORES_LOCALES) {
             await prepararCuenta(administrador, "admin", accesos);
@@ -319,12 +330,13 @@ export async function prepararDemostracion({ real = false, adminUid = "", archiv
     console.log(JSON.stringify(resumen, null, 2));
     return resumen;
 }
-// Afegim dos dies tancats de mostra una sola vegada, sense tocar cites ni reobertures.
+// Afegir dies tancats de mostra una sola vegada, sense tocar dies que després s’han reobert.
 async function prepararCierres(ultimaFecha) {
     const { baseDatos } = obtenerServiciosAdministrativos();
     await baseDatos.runTransaction(async transaccion => {
         const configuracion = await obtenerConfiguracionAgenda(transaccion);
         const referencia = baseDatos.doc("config/app");
+        // Si ja vam preparar els tancaments, no els tornem a crear ni tanquem una reobertura.
         if ((await transaccion.get(referencia)).get("demoClosedDates")) {
             return;
         }

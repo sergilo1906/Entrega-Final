@@ -1,3 +1,4 @@
+// Provem reserves i permisos contra Auth, Firestore i Functions locals, incloent peticions alhora.
 import test, { before, after, beforeEach } from "node:test";
 import assert from "node:assert/strict";
 import { doc, setDoc, getDoc, getDocs, collection, query, where, updateDoc } from "firebase/firestore";
@@ -13,13 +14,16 @@ before(async () => {
     await prepararCuentas();
     [cliente, otro, admin, invitado, pendiente, worker, manager] = await Promise.all(["client", "otro", "admin", null, "pendiente", "worker", "manager"].map(conectarCuenta));
 });
+// Cada cas comença amb la mateixa agenda de prova, sense resultats del cas anterior.
 beforeEach(prepararAgenda);
 after(async () => {
     for (const cuenta of [cliente, otro, admin, invitado, pendiente, worker, manager]) {
         await cuenta?.cerrar();
     }
 });
+// Preparar servei i data per consultar hores a les proves.
 const disponibilidad = () => ({ serviceId: "corte", dateStr: fechaPrueba() });
+// En aquests casos, que la petició falli és el resultat correcte: no ha de tenir permís.
 test("invitado, correo sin verificar y roles retirados no operan", async () => {
     for (const cuenta of [invitado, pendiente, worker, manager]) {
         await assert.rejects(cuenta.llamar("getAvailability", disponibilidad()));
@@ -75,12 +79,14 @@ test("cancelar libera el hueco, conserva idempotencia y no permite acceso ajeno"
     await otro.llamar("createBooking", solicitud());
 });
 test("dos clientes simultaneos: solo una reserva incompatible de 30/60 tiene exito", async () => {
+    // Enviem les dues reserves alhora; només una pot ocupar l’interval compartit.
     const resultados = await Promise.allSettled([cliente.llamar("createBooking", solicitud({ serviceId: "completo", timeStr: "09:00" })), otro.llamar("createBooking", solicitud({ timeStr: "09:30" }))]);
     assert.equal(resultados.filter(r => r.status === "fulfilled").length, 1);
     assert.equal((await baseDatos.collection("bookings").get()).size, 1);
 });
 test("reintentos simultaneos de una solicitud no duplican cita ni locks", async () => {
     const datos = solicitud();
+    // En aquest cas les dues peticions són la mateixa intenció i han de retornar la mateixa cita.
     const resultados = await Promise.all([cliente.llamar("createBooking", datos), cliente.llamar("createBooking", datos)]);
     assert.equal(resultados[0].bookingId, resultados[1].bookingId);
     assert.equal((await baseDatos.collection("bookingLocks").get()).size, 1);

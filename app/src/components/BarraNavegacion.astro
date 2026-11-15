@@ -1,4 +1,5 @@
 ---
+// Preparem els enllaços del menú. El mòdul de navegació decideix quins es veuen segons la sessió.
 import type { Rol } from "../modelos/cuentas";
 
 interface EnlacePersonal {
@@ -16,6 +17,7 @@ const enlacesPersonal: EnlacePersonal[] = [
 ];
 ---
 
+<!-- El menú és comú, però els enllaços privats comencen amagats fins que es comproven els permisos. -->
 <nav class="bg-white border-b border-gray-200 text-sm text-gray-800" aria-label="Navegació principal">
   <div class="max-w-6xl mx-auto px-4 py-3 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
     <div class="flex flex-wrap items-center gap-x-4 gap-y-2">

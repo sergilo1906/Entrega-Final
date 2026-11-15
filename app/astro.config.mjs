@@ -1,3 +1,4 @@
+// Configuració per generar les pàgines de la web com a fitxers HTML.
 import { defineConfig } from "astro/config";
 
 export default defineConfig({

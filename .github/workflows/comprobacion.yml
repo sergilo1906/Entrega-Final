@@ -1,3 +1,4 @@
+# GitHub executa aquestes comprovacions quan pugem codi a main o obrim una proposta de canvi.
 name: Comprovació M13
 
 on:
@@ -11,6 +12,7 @@ permissions:
 
 jobs:
   comprobar:
+    # Aquest ordinador de proves és independent del nostre i instal·la les dependències des dels locks.
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
@@ -41,5 +43,6 @@ jobs:
           echo "$JAVA_HOME_21_X64/bin" >> "$GITHUB_PATH"
       - name: Prepara Chromium
         run: node app/node_modules/@playwright/test/cli.js install --with-deps chromium
+      # Els emuladors proven el negoci i les regles; Playwright comprova els formularis de la web.
       - name: Prova el servidor i els recorreguts d’escriptori i mòbil
         run: npm run test:emuladores

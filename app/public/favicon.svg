@@ -1,4 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64">
+  <!-- Icona senzilla de tisores que apareix a la pestanya del navegador. -->
   <rect width="100%" height="100%" fill="#111"/>
   <text x="50%" y="55%" font-size="36" text-anchor="middle" fill="#fff">✂</text>
 </svg>

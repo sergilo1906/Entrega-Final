@@ -1,9 +1,11 @@
+// Comprovem el formulari de login i portem el compte a la pantalla que li correspon.
 import { esperarEstadoSesion, iniciarSesion, observarSesion } from "../../datos/sesion";
 import { obtenerDestinoInicial } from "../../comun/permisos";
 import { explicarErrorAcceso } from "../../comun/errores";
 import { bloquearFormulario, comprobarFormulario } from "../../comun/formularios";
 const formulario = document.querySelector<HTMLFormElement>("#login-form");
 const mensaje = document.getElementById("login-msg");
+// Aquesta variable evita enviar el login una altra vegada mentre encara esperem.
 let solicitudEnCurso = false;
 observarSesion((estado) => {
     if (!formulario || !mensaje || solicitudEnCurso) {
@@ -37,6 +39,7 @@ formulario?.addEventListener("submit", async (evento) => {
     bloquearFormulario(formulario, true);
     mensaje.textContent = "Iniciant la sessió…";
     try {
+        // Esperem que Firebase comprovi les credencials; després mirem els permisos.
         await iniciarSesion(correo, contrasena);
         const estado = await esperarEstadoSesion();
         if (!estado.usuario) {

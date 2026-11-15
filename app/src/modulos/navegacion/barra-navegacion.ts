@@ -1,10 +1,12 @@
+// Mostrem els enllaços que pot utilitzar cada compte i preparem el botó de sortir.
 import { cerrarSesion, observarSesion } from "../../datos/sesion";
 import { comprobarPermiso, obtenerDestinoInicial, protegerRutaActual } from "../../comun/permisos";
 import type { EstadoSesion } from "../../modelos/cuentas";
+// Mostrar o amagar un element del menú.
 function mostrarElemento(selector: string, mostrar: boolean): void {
     document.querySelector(selector)?.classList.toggle("hidden", !mostrar);
 }
-// Adaptem els enllaços als permisos de la sessió actual.
+// Canviar els enllaços visibles segons el compte i els seus permisos.
 function actualizarNavegacion(estado: EstadoSesion): void {
     const autenticado = estado.estado === "autenticado";
     const usuario = estado.usuario;
@@ -19,6 +21,7 @@ function actualizarNavegacion(estado: EstadoSesion): void {
     if (avatar) {
         avatar.textContent = autenticado ? (estado.perfil?.name || usuario?.nombre || usuario?.correo || "?").trim().slice(0, 1).toUpperCase() : "";
     }
+    // Recorrem els enllaços que indiquen rols i amaguem els que el compte no pot utilitzar.
     const enlaces = document.querySelectorAll<HTMLElement>("[data-roles]");
     for (let indice = 0; indice < enlaces.length; indice++) {
         const roles = enlaces[indice].dataset.roles?.split(" ") || [];
@@ -39,6 +42,7 @@ const botonSalir = document.querySelector<HTMLButtonElement>("#btn-logout");
 let cierreEnCurso = false;
 if (botonSalir) {
     botonSalir.disabled = false;
+    // Durant la sortida desactivem el botó per no enviar-la dues vegades.
     botonSalir.addEventListener("click", async () => {
         if (cierreEnCurso) {
             return;

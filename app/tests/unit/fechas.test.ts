@@ -1,5 +1,7 @@
+// Comprovem les dates del negoci i els casos on una hora no existeix pel canvi d’hora.
 import { expect, it } from "vitest";
 import { esFechaCalendarioValida, formatearFechaNegocio, sumarDiasCalendario, obtenerInicioCita } from "../../src/comun/fechas";
+// El mateix instant pot ser un dia diferent segons el país; hem de mostrar el dia del negoci.
 it("usa la zona del negocio aunque el navegador este en otro dia", () => {
     const instante = new Date("2026-11-09T23:30:00Z");
     expect(formatearFechaNegocio("Europe/Madrid", instante)).toBe("2026-11-10");

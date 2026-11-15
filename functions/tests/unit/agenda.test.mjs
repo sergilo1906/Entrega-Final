@@ -1,9 +1,11 @@
+// Proves de càlcul i validació que no necessiten llegir dades de Firebase.
 import test from "node:test";
 import assert from "node:assert/strict";
 import { validarHorario, cabeEnHorario } from "../../src/horarios.js";
 import { calcularHorasLibres, validarDuracion } from "../../src/disponibilidad.js";
 import { validarFechaCalendario, obtenerIntervaloUtc } from "../../src/fechas.js";
 import { normalizarRolEntrada, ROLES } from "../../src/permisos.js";
+// Crear un horari petit amb dues franges per comprovar el càlcul d’hores.
 const days = () => Array.from({ length: 7 }, () => ({ active: true, ranges: [{ start: "09:00", end: "11:00" }, { start: "12:00", end: "13:00" }] }));
 test("solo dos roles; ningun rol historico se convierte en administrador", () => {
     assert.deepEqual(ROLES, ["client", "admin"]);

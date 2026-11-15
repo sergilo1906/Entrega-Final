@@ -1,4 +1,5 @@
-// Validem el formulari; el servidor també comprova les dades.
+// Comprovacions dels formularis que es comparteixen entre pantalles.
+// Comprovar que el correu no sigui buit i tingui un format vàlid.
 export function comprobarCorreo(correo: string): string {
     if (!correo.trim()) {
         return "Escriu el correu.";
@@ -8,6 +9,7 @@ export function comprobarCorreo(correo: string): string {
     }
     return "";
 }
+// Comprovar el correu i la contrasenya abans d’enviar el formulari.
 export function comprobarFormulario(correo: string, contrasena: string): string {
     const mensaje = comprobarCorreo(correo);
     if (mensaje) {
@@ -21,6 +23,7 @@ export function comprobarFormulario(correo: string, contrasena: string): string 
     }
     return "";
 }
+// Comprovar que hi hagi nom i que el nom i el telèfon no siguin massa llargs.
 export function comprobarContacto(nombre: string, telefono: string): string {
     if (!nombre.trim()) {
         return "Escriu el nom.";
@@ -33,6 +36,7 @@ export function comprobarContacto(nombre: string, telefono: string): string {
     }
     return "";
 }
+// Desactivar els camps mentre esperem la resposta per evitar enviaments repetits.
 export function bloquearFormulario(formulario: HTMLFormElement, bloqueado: boolean): void {
     formulario.classList.toggle("opacity-50", bloqueado);
     formulario.classList.toggle("pointer-events-none", bloqueado);

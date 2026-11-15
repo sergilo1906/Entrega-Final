@@ -1,5 +1,6 @@
+// Avisos curts que surten a la pantalla quan acabem una operació.
 import type { TipoAviso } from "../modelos/interfaz";
-// Mostrem un avís breu sense inserir HTML de l’usuari.
+// Mostrar un missatge uns segons i després treure’l de la pantalla.
 export function mostrarAviso(mensaje: string, tipo: TipoAviso = "info"): void {
     let contenedor = document.getElementById("toast-root");
     if (!contenedor) {

@@ -1,8 +1,10 @@
+// Script privat per assignar client o admin. Sense --aplicar només comprova el compte i mostra què faria.
 import { obtenerServiciosAdministrativos, comprobarEntornoLocal } from "../src/firebase.js";
 import { asignarRolAutorizado } from "../src/cuentas.js";
 import { comprobarUid, normalizarRolEntrada } from "../src/permisos.js";
 // Eina privada de l’operador; no es publica com a Function.
 const argumentos = process.argv.slice(2);
+// Buscar un argument de la comanda i avisar si no té valor.
 function leer(nombre) {
     const indice = argumentos.indexOf(nombre);
     if (indice < 0 || !argumentos[indice + 1] || argumentos[indice + 1].startsWith("--")) {
@@ -32,6 +34,7 @@ else {
 }
 const { autenticacion } = obtenerServiciosAdministrativos();
 await autenticacion.getUser(uid);
+// Només fem el canvi si la comanda porta --aplicar; altrament queda en simulació.
 if (argumentos.includes("--aplicar")) {
     await asignarRolAutorizado(uid, rol);
     console.log("Rol actualizado en " + proyecto + ". La cuenta debe renovar su sesion.");

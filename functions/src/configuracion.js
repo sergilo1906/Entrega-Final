@@ -1,12 +1,15 @@
+// Configuració de l’única agenda i número de canvi per detectar dues operacions alhora.
 import { HttpsError } from "firebase-functions/v2/https";
 import { obtenerServiciosAdministrativos } from "./firebase.js";
 import { validarHorario } from "./horarios.js";
 export const UID_PROFESIONAL = "principal";
+// Comprovar que la zona horària existeixi abans de fer-la servir.
 export function validarZona(timezone) {
     if (typeof timezone !== "string" || !timezone.trim()) {
         throw new HttpsError("invalid-argument", "Indica la zona horària.");
     }
     try {
+        // Si el nom de zona no existeix, Intl llança un error i l’aturem al catch.
         new Intl.DateTimeFormat("es", { timeZone: timezone }).format();
     }
     catch {
@@ -14,7 +17,7 @@ export function validarZona(timezone) {
     }
     return timezone;
 }
-// L’horari habitual es repeteix cada setmana.
+// Llegir l’horari i la zona horària desats a config/app.
 export async function obtenerConfiguracionAgenda(transaccion = null) {
     const { baseDatos } = obtenerServiciosAdministrativos();
     const referencia = baseDatos.doc("config/app");
@@ -28,7 +31,8 @@ export async function obtenerConfiguracionAgenda(transaccion = null) {
         revision: Number(documento.get("revision") || 0),
     };
 }
-// El control compartit fa repetir la transacció si l’agenda ha canviat.
+// Augmentar el número de canvi de l’agenda perquè Firebase detecti canvis alhora.
 export function actualizarControlAgenda(transaccion, baseDatos, configuracion) {
+    // Aquest número compartit fa que dues operacions d’agenda alhora no treballin amb dades diferents.
     transaccion.update(baseDatos.doc("config/app"), { revision: configuracion.revision + 1 });
 }

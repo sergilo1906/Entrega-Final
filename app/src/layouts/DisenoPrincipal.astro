@@ -1,4 +1,5 @@
 ---
+// Estructura comuna: capçalera, menú, contingut i peu. Les dades privades es carreguen després al navegador.
 import BarraNavegacion from "../components/BarraNavegacion.astro";
 import "../styles/tailwind.css";
 
@@ -21,6 +22,7 @@ const politicaContingut = "default-src 'self'; script-src 'self'; style-src 'sel
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+    <!-- Limitem des d’on es poden carregar recursos i a quins serveis es pot connectar la pàgina. -->
     <meta http-equiv="Content-Security-Policy" content={politicaContingut} />
     <title>{titulo} - BarberPro Studio</title>
     {noIndex && <meta name="robots" content="noindex, nofollow" />}
@@ -32,6 +34,7 @@ const politicaContingut = "default-src 'self'; script-src 'self'; style-src 'sel
     <BarraNavegacion />
     <p id="acceso-msg" role="status" hidden class="max-w-6xl mx-auto px-4 py-3 text-sm text-gray-600"></p>
     <main class="flex-1 w-full max-w-6xl mx-auto px-4 py-6 md:py-10 space-y-6 transition-opacity duration-150">
+      <!-- Aquí Astro posa el contingut de la pàgina que fa servir aquest disseny. -->
       <slot />
     </main>
     <footer class="text-center text-[11px] text-gray-500 py-8">

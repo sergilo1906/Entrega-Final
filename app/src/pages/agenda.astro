@@ -1,4 +1,5 @@
 ---
+// Agenda del dia. El llistat i els botons els omple el mòdul agenda-diaria després de comprovar el compte.
 import DisenoPrincipal from "../layouts/DisenoPrincipal.astro";
 ---
 
@@ -30,6 +31,7 @@ import DisenoPrincipal from "../layouts/DisenoPrincipal.astro";
 
       <p id="agenda-msg" class="text-xs text-gray-600 min-h-[1.5rem] leading-tight"></p>
 
+      <!-- Aquí es creen les targetes de les cites retornades per la consulta del dia. -->
       <div id="agenda-list" class="divide-y divide-gray-200 text-sm rounded border border-gray-200"></div>
     </div>
   </section>

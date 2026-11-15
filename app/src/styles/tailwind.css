@@ -1,3 +1,4 @@
+/* Tailwind genera les classes que fem servir a les pàgines; a sota hi ha els ajustos comuns. */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

@@ -1,4 +1,5 @@
 ---
+// Formulari de servei nou i llista on després es creen els formularis d’edició.
 import DisenoPrincipal from "../layouts/DisenoPrincipal.astro";
 ---
 
@@ -38,6 +39,7 @@ import DisenoPrincipal from "../layouts/DisenoPrincipal.astro";
         <button id="services-refresh" class="text-sm border rounded px-3 py-1 hover:bg-gray-50">Recarrega</button>
       </div>
       <p id="services-msg" role="status" class="text-xs text-gray-600 mb-2"></p>
+      <!-- El mòdul de serveis afegeix aquí un formulari per a cada servei carregat. -->
       <div id="services-list" class="space-y-3"></div>
     </div>
   </section>

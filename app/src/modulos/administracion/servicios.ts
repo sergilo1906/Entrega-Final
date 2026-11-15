@@ -1,3 +1,4 @@
+// Formularis per crear i editar serveis: nom, durada, preu i si es poden reservar.
 import { observarAreaAutorizada, type ContextoAutorizado } from "../../comun/permisos";
 import { obtenerCatalogoCompleto } from "../../datos/catalogo";
 import { guardarServicio } from "../../datos/funciones-remotas";
@@ -12,9 +13,10 @@ const duracion = document.querySelector<HTMLInputElement>("#service-duration")!;
 const precio = document.querySelector<HTMLInputElement>("#service-price")!;
 const activo = document.querySelector<HTMLInputElement>("#service-active")!;
 let contexto: ContextoAutorizado | null = null;
+// Preparem l’ID del servei nou. Si repetim l’enviament, no crearem un segon servei.
 let nuevoId = crypto.randomUUID();
 let ocupada = false;
-// Reutilitzem l’ID del servei per poder reintentar sense duplicar-lo.
+// Enviar el servei, tornar a carregar la llista i avisar si s’ha guardat.
 async function guardar(item: ServicioAdministrable) {
     const actual = contexto;
     if (!actual?.esVigente() || ocupada) {
@@ -31,6 +33,7 @@ async function guardar(item: ServicioAdministrable) {
         if (!actual.esVigente()) {
             return;
         }
+        // Després d’una alta correcta ja podem preparar un ID per al servei següent.
         if (item.id === nuevoId) {
             nuevoId = crypto.randomUUID();
             formulario.reset();
@@ -55,7 +58,7 @@ async function guardar(item: ServicioAdministrable) {
         }
     }
 }
-// Carreguem el catàleg i creem els controls amb text segur.
+// Llegir les dades actuals i mostrar-les només si seguim amb el mateix compte.
 async function cargar(actual: ContextoAutorizado) {
     try {
         const catalogo = await obtenerCatalogoCompleto();
@@ -63,6 +66,7 @@ async function cargar(actual: ContextoAutorizado) {
             return;
         }
         lista.replaceChildren();
+        // Creem un formulari per a cada servei perquè es puguin editar els seus camps.
         for (const item of catalogo) {
             const fila = document.createElement("form");
             fila.className = "border rounded p-3 grid gap-3 sm:grid-cols-2";
@@ -86,18 +90,21 @@ async function cargar(actual: ContextoAutorizado) {
             guardarFila.className = "border rounded px-3 py-2";
             guardarFila.textContent = "Desa el servei";
             fila.append(guardarFila);
+            // Crear una etiqueta i un camp amb el valor del servei que estem editant.
             function campo(texto: string, valor: string, tipo: string) {
                 const etiqueta = document.createElement("label");
                 etiqueta.textContent = texto;
                 const entrada = document.createElement("input");
                 entrada.type = tipo;
                 entrada.required = true;
+                // Posem el valor inicial del servei al camp; l’usuari després el pot canviar.
                 entrada.defaultValue = valor;
                 entrada.className = "w-full border rounded px-3 py-2";
                 etiqueta.append(entrada);
                 fila.append(etiqueta);
                 return entrada;
             }
+            // Llegim els camps d’aquesta fila i els passem a la mateixa funció de guardar.
             fila.addEventListener("submit", evento => {
                 evento.preventDefault();
                 void guardar({
@@ -120,6 +127,7 @@ formulario.addEventListener("submit", evento => {
         id: nuevoId, name: nombre.value, durationMin: Number(duracion.value), price: Number(precio.value), active: activo.checked
     });
 });
+// El botó Recarrega torna a llegir els serveis des de Firestore.
 document.getElementById("services-refresh")!.addEventListener("click", () => {
     if (contexto?.esVigente() && !ocupada) {
         void cargar(contexto);

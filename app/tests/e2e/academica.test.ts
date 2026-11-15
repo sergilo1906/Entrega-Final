@@ -1,3 +1,4 @@
+// Proves que obren la web i fan servir els formularis com un usuari. Només fan servir els emuladors.
 import { test, expect, type Page } from "@playwright/test";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
@@ -5,15 +6,18 @@ import { readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 const raiz = fileURLToPath(new URL("../../../", import.meta.url));
+// Preparar una data de prova a partir del dia actual de la barberia.
 const fecha = (dias = 7) => {
     const partes = new Intl.DateTimeFormat("en-CA", {
         timeZone: "Europe/Madrid", year: "numeric", month: "2-digit", day: "2-digit"
     }).formatToParts(new Date());
+    // Agafar una part de la data per poder formar any, mes i dia.
     const valor = (tipo: string) => partes.find(p => p.type === tipo)!.value;
     const instante = new Date(valor("year") + "-" + valor("month") + "-" + valor("day") + "T00:00:00Z");
     instante.setUTCDate(instante.getUTCDate() + dias);
     return instante.toISOString().slice(0, 10);
 };
+// Omplir el login de prova i comprovar que arribem a la pantalla correcta.
 async function entrar(page: Page, cuenta = "client") {
     await page.goto("/login");
     await page.locator("#login-email").fill("demo-" + cuenta + "@example.test");
@@ -22,6 +26,7 @@ async function entrar(page: Page, cuenta = "client") {
     await expect(page).toHaveURL(cuenta === "admin" ? /\/admin\/?$/ : /\/reservar\/?$/);
     await expect(page.locator("html")).not.toHaveAttribute("data-auth-pending");
 }
+// Fer una reserva des dels formularis de prova i comprovar que es confirma.
 async function reservar(page: Page, dias = 7, servicio = "corte", hora = "09:00") {
     await page.goto("/reservar");
     await expect(page.locator("#service-select option[value='corte']")).toBeAttached();
@@ -31,6 +36,7 @@ async function reservar(page: Page, dias = 7, servicio = "corte", hora = "09:00"
     await expect(page.locator("#booking-success")).toBeVisible();
     await expect(page.locator("#booking-summary")).toContainText("Cita confirmada");
 }
+// Abans dels recorreguts preparem els comptes i les dades de prova locals.
 test.beforeAll(() => {
     execFileSync(process.execPath, ["functions/scripts/preparar-datos-reservas.mjs"], {
         cwd: raiz, env: process.env, stdio: "pipe"
@@ -190,6 +196,7 @@ test("doble clic i resposta perduda: recarregar i reintentar conserva una sola c
         if (primera) {
             primera = false;
             // El servidor desa la cita, però simulem que la resposta no arriba al client.
+            // Deixem que el servidor guardi la cita abans de simular que es perd la resposta.
             const resposta = await ruta.fetch();
             expect(resposta.ok()).toBe(true);
             await ruta.fulfill({ status: 503, json: { error: { status: "UNAVAILABLE", message: "Resposta no disponible" } } });
@@ -213,6 +220,7 @@ test("doble clic i resposta perduda: recarregar i reintentar conserva una sola c
     await page.locator("#booking-retry").click();
     await expect(page.locator("#booking-summary")).toContainText("Cita confirmada");
     expect(peticions).toHaveLength(2);
+    // El reintent ha de portar el mateix requestId: no és una reserva nova.
     expect(peticions[0]).toBe(peticions[1]);
     await page.goto("/mis-citas");
     await page.locator("#filter-date").fill(fecha(11));
@@ -233,6 +241,7 @@ test("la demo catalana se usa desde la interfaz y el administrador ve las doce c
     });
     const resumen = JSON.parse(salida);
     const accesos = JSON.parse(readFileSync(archivoCompartido, "utf8")).cuentas;
+    // Entrar a la web amb un compte fictici preparat per la prova.
     async function entrarDemo(cuenta: {
         email: string;
         password: string;

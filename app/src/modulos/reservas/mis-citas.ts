@@ -1,3 +1,4 @@
+// Compartim el llistat entre Les meves cites i Agenda. Canvien la consulta i els botons segons el rol.
 import { observarAreaAutorizada, type ContextoAutorizado } from "../../comun/permisos";
 import { obtenerCitasUsuario, obtenerCitasDia } from "../../datos/agenda";
 import { cancelarReserva, completarReserva } from "../../datos/funciones-remotas";
@@ -6,7 +7,7 @@ import { formatearFechaNegocio, obtenerInicioCita } from "../../comun/fechas";
 import { obtenerEtiquetaEstadoCliente } from "../../comun/estados-cita";
 import { explicarErrorAdministracion } from "../../comun/errores";
 import type { Cita } from "../../modelos/agenda";
-// Les meves cites i Agenda comparteixen el llistat i les accions bàsiques.
+// Preparar el mateix llistat per a un client o per a l’administrador.
 export function iniciarListado(administrador: boolean): void {
     const lista = document.getElementById(administrador ? "agenda-list" : "my-list")!;
     const mensaje = document.getElementById(administrador ? "agenda-msg" : "my-msg")!;
@@ -18,9 +19,10 @@ export function iniciarListado(administrador: boolean): void {
     let citas: Cita[] = [];
     let procesando = false;
     fecha.disabled = true;
-    // Mostrem les cites autoritzades i les accions que permet el seu estat.
+    // Aplicar els filtres i crear les targetes amb els botons permesos.
     function pintar() {
         lista.replaceChildren();
+        // Ens quedem només les cites que coincideixen amb la data i l’estat triats.
         const visibles = citas.filter(cita => (!fecha.value || cita.dateStr === fecha.value) && (estado.value === "all" || cita.status === estado.value));
         mensaje.textContent = visibles.length ? "" : "No hi ha cites amb aquests filtres.";
         for (const cita of visibles) {
@@ -33,19 +35,23 @@ export function iniciarListado(administrador: boolean): void {
             const datos = document.createElement("p");
             datos.textContent = obtenerEtiquetaEstadoCliente(cita.status) + " · " + cita.durationMin + " min · " + (cita.serviceSnapshot?.price ?? "—") + " EUR";
             tarjeta.append(titulo, datos);
+            // Només l’agenda de l’administrador mostra les dades de contacte de la cita.
             if (administrador) {
                 const cliente = document.createElement("p");
                 cliente.textContent = [cita.userName, cita.userEmail, cita.userPhone].filter(Boolean).join(" · ");
                 tarjeta.append(cliente);
             }
+            // Els altres estats es poden llegir, però no tenen botons per tornar-los a modificar.
             if (cita.status === "confirmed") {
                 if (administrador) {
                     accion("Marca com a completada", () => completarReserva(cita.id));
                 }
+                // El client només veu el botó de cancel·lar si la cita encara no ha començat.
                 if (administrador || obtenerInicioCita(cita, zona).getTime() > Date.now()) {
                     accion("Cancel·la la cita", () => cancelarReserva(cita.id));
                 }
             }
+            // Crear un botó de cita que demana confirmació abans d’enviar el canvi.
             function accion(texto: string, ejecutar: () => Promise<unknown>) {
                 const boton = document.createElement("button");
                 boton.type = "button";
@@ -54,6 +60,7 @@ export function iniciarListado(administrador: boolean): void {
                 boton.disabled = procesando;
                 boton.addEventListener("click", async () => {
                     const actual = contexto;
+                    // Demanem confirmació i evitem que es facin dos canvis mentre el primer encara s’està guardant.
                     if (!actual?.esVigente() || procesando || !window.confirm(texto + "?")) {
                         return;
                     }
@@ -84,7 +91,7 @@ export function iniciarListado(administrador: boolean): void {
             lista.append(tarjeta);
         }
     }
-    // El client consulta només el seu UID; l’agenda demana administrador.
+    // Llegir les dades actuals i mostrar-les només si seguim amb el mateix compte.
     async function cargar() {
         const actual = contexto;
         const consulta = ++revision;
@@ -94,6 +101,7 @@ export function iniciarListado(administrador: boolean): void {
         mensaje.textContent = "Carregant les cites…";
         lista.replaceChildren();
         try {
+            // L’administrador consulta per data; el client consulta només pel seu propi identificador.
             const resultado = administrador ? await obtenerCitasDia(fecha.value) : await obtenerCitasUsuario(actual.usuario.uid);
             if (!actual.esVigente() || consulta !== revision) {
                 return;
@@ -107,6 +115,7 @@ export function iniciarListado(administrador: boolean): void {
             }
         }
     }
+    // A Agenda canviem la consulta; a Les meves cites filtrem la llista que ja hem carregat.
     fecha.addEventListener("change", () => {
         if (administrador) {
             void cargar();

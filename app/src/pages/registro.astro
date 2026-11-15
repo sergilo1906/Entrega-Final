@@ -1,4 +1,5 @@
 ---
+// Formulari de registre. Demanem repetir la contrasenya abans de crear el compte.
 import DisenoPrincipal from "../layouts/DisenoPrincipal.astro";
 ---
 
@@ -7,6 +8,7 @@ import DisenoPrincipal from "../layouts/DisenoPrincipal.astro";
     <h1 class="font-semibold text-lg">Crea un compte</h1>
     <p class="text-sm text-gray-600">Registra’t per reservar i gestionar les teves cites.</p>
 
+    <!-- Els id connecten els camps amb el JavaScript; els name indiquen els valors de FormData. -->
     <form id="reg-form" class="text-sm space-y-4 opacity-50 pointer-events-none">
       <div>
         <label for="reg-name" class="block text-xs text-gray-600 mb-1">Nom</label>

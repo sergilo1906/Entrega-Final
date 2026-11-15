@@ -1,3 +1,4 @@
+// Variables públiques que podem llegir de la configuració. Aquí només indiquem els seus tipus.
 /// <reference path="../.astro/types.d.ts" />
 /// <reference types="astro/client" />
 interface ImportMetaEnv {

@@ -1,5 +1,7 @@
+// Comprovem que no es barregin el projecte real i els emuladors.
 import { expect, it } from "vitest";
 import { comprobarConfiguracionFirebase, type ConfiguracionFirebase } from "../../src/datos/firebase";
+// Partim d’una configuració local vàlida i després canviem camps per comprovar que es rebutgin.
 const local: ConfiguracionFirebase = {
     modo: "local", usarEmuladores: true, usarEmuladorFunciones: true, apiKey: "demo", appId: "demo", projectId: "demo-barberpro-m13", authDomain: "localhost", appUrl: "http://localhost:4321"
 };

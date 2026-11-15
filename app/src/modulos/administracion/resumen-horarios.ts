@@ -1,3 +1,4 @@
+// Llegim els camps d’Horari i enviem els canvis al servidor. També podem tancar o reobrir un dia.
 import { observarAreaAutorizada, type ContextoAutorizado } from "../../comun/permisos";
 import { obtenerConfiguracionAgenda, obtenerDiasCerrados } from "../../datos/configuracion";
 import { guardarHorario, cerrarDia } from "../../datos/funciones-remotas";
@@ -12,20 +13,23 @@ const mensajeCierre = document.getElementById("closed-msg")!;
 const dias = Array.from(document.querySelectorAll<HTMLFieldSetElement>("[data-day]"));
 let contexto: ContextoAutorizado | null = null;
 let ocupada = false;
+// Bloquejar els dos formularis mentre es guarda un canvi.
 function bloquear(valor: boolean) {
     ocupada = valor;
     bloquearFormulario(formulario, valor);
     bloquearFormulario(cierre, valor);
 }
-// Llegim els set dies i les franges que s’han emplenat.
+// Recórrer els set dies i recollir les franges que s’han escrit al formulari.
 function leerDias(): DiaHorario[] {
     const resultado: DiaHorario[] = [];
+    // Cada fila és un dia de la setmana; recollim si està obert i les dues possibles franges.
     for (const fila of dias) {
         const active = fila.querySelector<HTMLInputElement>("[data-active]")!.checked;
         const ranges: DiaHorario["ranges"] = [];
         for (let indice = 0; indice < 2; indice++) {
             const start = fila.querySelector<HTMLInputElement>('[data-start="' + indice + '"]')!.value;
             const end = fila.querySelector<HTMLInputElement>('[data-end="' + indice + '"]')!.value;
+            // Si s’ha omplert algun extrem, enviem la franja perquè el servidor comprovi si està completa.
             if (start || end) {
                 ranges.push({ start, end });
             }
@@ -34,7 +38,7 @@ function leerDias(): DiaHorario[] {
     }
     return resultado;
 }
-// Mostrem les dates que estan tancades.
+// Buidar la llista i afegir les dates que estan tancades.
 async function listarCierres(actual: ContextoAutorizado) {
     const fechas = await obtenerDiasCerrados();
     if (!actual.esVigente()) {
@@ -48,7 +52,7 @@ async function listarCierres(actual: ContextoAutorizado) {
         lista.append(li);
     }
 }
-// Bloquegem els formularis mentre desem i conservem les dades si falla.
+// Fer una operació i esperar que acabi abans de tornar a activar els controls.
 async function ejecutar(operacion: () => Promise<unknown>, aviso: HTMLElement) {
     const actual = contexto;
     if (!actual?.esVigente() || ocupada) {
@@ -57,6 +61,7 @@ async function ejecutar(operacion: () => Promise<unknown>, aviso: HTMLElement) {
     bloquear(true);
     aviso.textContent = "Desant…";
     try {
+        // Esperem el servidor abans d’avisar que s’ha guardat el canvi.
         await operacion();
         if (actual.esVigente()) {
             await listarCierres(actual);
@@ -76,11 +81,13 @@ async function ejecutar(operacion: () => Promise<unknown>, aviso: HTMLElement) {
         }
     }
 }
+// Enviar l’horari no recarrega la pàgina: llegim els camps i cridem el servidor.
 formulario.addEventListener("submit", evento => {
     evento.preventDefault();
     const datos = { timezone: zona.value, days: leerDias() };
     void ejecutar(() => guardarHorario(datos), mensaje);
 });
+// Aquest segon formulari envia només una data i si la volem tancada o oberta.
 cierre.addEventListener("submit", evento => {
     evento.preventDefault();
     const fecha = document.querySelector<HTMLInputElement>("#closed-date")!.value;
@@ -96,6 +103,7 @@ observarAreaAutorizada(["admin"], actual => {
                 return;
             }
             zona.value = config.timezone;
+            // Omplim cada dia del formulari amb les dades guardades, de diumenge a dissabte.
             dias.forEach((fila, i) => {
                 fila.querySelector<HTMLInputElement>("[data-active]")!.checked = config.days[i].active;
                 [0, 1].forEach(j => {
