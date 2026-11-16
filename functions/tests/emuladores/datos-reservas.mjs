@@ -5,17 +5,25 @@ import { getFunctions, connectFunctionsEmulator, httpsCallable } from "firebase/
 import { getFirestore, connectFirestoreEmulator } from "firebase/firestore";
 import { obtenerServiciosAdministrativos, comprobarEntornoLocal } from "../../src/firebase.js";
 import { formatearFechaZona, sumarDiasCalendario } from "../../src/fechas.js";
+// La barrera es comprova abans d’utilitzar les dades o de fer els resets locals.
 comprobarEntornoLocal();
 export const { baseDatos, autenticacion } = obtenerServiciosAdministrativos();
 export const cuentas = {
     client: "demo-client", otro: "demo-otro", admin: "demo-admin", pendiente: "demo-pendiente", worker: "demo-worker", manager: "demo-manager"
 };
 // Preparar un horari fictici obert per no dependre de quin dia executem la prova.
+// No rep paràmetres: construeix un horari fictici per a les proves.
+// Retorna set dies oberts amb dues franges, sense dependre del calendari real.
 export const horario = () => Array.from({ length: 7 }, () => ({ active: true, ranges: [{ start: "09:00", end: "14:00" }, { start: "16:00", end: "20:00" }] }));
 // Calcular la data de prova amb la zona horària del negoci.
+// Rep quants dies de diferència tindrà la prova respecte d’avui.
+// Retorna la data calculada amb la zona horària del negoci.
 export const fechaPrueba = (dias = 7) => sumarDiasCalendario(formatearFechaZona(new Date(), "Europe/Madrid").slice(0, 10), dias);
 // Preparar comptes ficticis i també rols antics per comprovar que se’ls denega l’accés.
+// No rep paràmetres: utilitza els identificadors ficticis de les proves.
+// La promesa deixa preparats Auth i els perfils amb els permisos de cada cas.
 export async function prepararCuentas() {
+    // La barrera es comprova abans d’utilitzar les dades o de fer els resets locals.
     comprobarEntornoLocal();
     for (const [nombre, uid] of Object.entries(cuentas)) {
         try {
@@ -26,6 +34,7 @@ export async function prepararCuentas() {
                 uid, email: uid + "@example.test", password: "Prueba123!", emailVerified: nombre !== "pendiente"
             });
         }
+        // Els comptes altre/pendent continuen sent clients; worker i manager només són exemples que han de quedar denegats.
         const role = ["otro", "pendiente"].includes(nombre) ? "client" : nombre;
         await autenticacion.updateUser(uid, { disabled: false, emailVerified: nombre !== "pendiente" });
         await autenticacion.setCustomUserClaims(uid, { role, roleVersion: 0 });
@@ -35,9 +44,13 @@ export async function prepararCuentas() {
     }
 }
 // Netejar només les dades dels emuladors i crear l’horari i els serveis de prova.
+// No rep paràmetres: treballa només amb el projecte demo i els ports verificats.
+// La promesa reinicia les cites, les marques, els serveis i l’horari de prova.
 export async function prepararAgenda() {
+    // La barrera es comprova abans d’utilitzar les dades o de fer els resets locals.
     comprobarEntornoLocal();
     // Esborrem només dades fictícies dels emuladors amb projecte i ports fixos.
+    // Aquest bucle buida només les col·leccions de prova dels emuladors que ja hem verificat.
     for (const nombre of ["bookings", "bookingLocks", "closedDays", "services"]) {
         for (const documento of (await baseDatos.collection(nombre).get()).docs) {
             await documento.ref.delete();
@@ -62,6 +75,8 @@ export async function prepararAgenda() {
 }
 let contador = 0;
 // Connectar el compte fictici als emuladors com ho faria el navegador.
+// Rep el nom del compte fictici, o null per provar una petició sense sessió.
+// Retorna els SDK locals, una funció per cridar callables i una altra per tancar-los.
 export async function conectarCuenta(nombre = "client") {
     const app = initializeApp({ projectId: "demo-barberpro-m13", apiKey: "demo-api-key" }, "prueba-" + (++contador));
     const auth = getAuth(app);
@@ -70,6 +85,7 @@ export async function conectarCuenta(nombre = "client") {
     connectFirestoreEmulator(datos, "127.0.0.1", 8088);
     const funciones = getFunctions(app, "europe-west1");
     connectFunctionsEmulator(funciones, "127.0.0.1", 5001);
+    // Amb null no iniciem sessió, de manera que podem provar una petició convidada de veritat.
     if (nombre) {
         await signInWithEmailAndPassword(auth, cuentas[nombre] + "@example.test", "Prueba123!");
     }
@@ -78,6 +94,8 @@ export async function conectarCuenta(nombre = "client") {
     };
 }
 // Preparar una reserva de prova amb un identificador nou i els canvis que indiqui el cas.
+// Rep els camps que vol canviar el cas de prova respecte de la reserva base.
+// Retorna una sol·licitud amb ID nou; els camps rebuts substitueixen els valors de prova.
 export const solicitud = (cambios = {}) => ({
     serviceId: "corte", dateStr: fechaPrueba(), timeStr: "09:00", requestId: crypto.randomUUID(), ...cambios
 });

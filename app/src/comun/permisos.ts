@@ -11,6 +11,8 @@ export interface ContextoAutorizado {
     esVigente: () => boolean;
 }
 // Carregar les dades només si el compte té permís i netejar-les quan canvia de compte.
+// Rep els rols permesos i dues funcions: carregar dades i netejar la pantalla.
+// No retorna dades: avisa de cada compte autoritzat i invalida les càrregues antigues.
 export function observarAreaAutorizada(roles: readonly Rol[], cargar: (contexto: ContextoAutorizado) => void, limpiar: () => void): void {
     let claveAnterior = "";
     let revision = 0;
@@ -25,9 +27,11 @@ export function observarAreaAutorizada(roles: readonly Rol[], cargar: (contexto:
         if (clave === claveAnterior) {
             return;
         }
+        // Invalidem les consultes anteriors abans de netejar i carregar les del compte nou.
         revision++;
         claveAnterior = clave;
         limpiar();
+        // Si no tenim una identitat autoritzada, deixem la pantalla neta i no comencem cap consulta.
         if (!clave || !usuario) {
             return;
         }
@@ -38,35 +42,49 @@ export function observarAreaAutorizada(roles: readonly Rol[], cargar: (contexto:
     });
 }
 // Retornar el nom del rol que mostrem al perfil.
+// Rep client o admin.
+// Retorna el nom del rol que llegirà l’usuari al perfil.
 export function obtenerEtiquetaRol(rol: Rol): string {
     return rol === "admin" ? "Administrador" : "Client";
 }
 // Triar la pantalla inicial: administració o reserva.
+// Rep el rol del compte que acaba d’entrar.
+// Retorna /admin per a administradors o /reservar per a clients.
 export function obtenerDestinoInicial(rol: Rol): string {
     return rol === "admin" ? "/admin" : "/reservar";
 }
 // Mirar si tenim sessió, el correu verificat i un dels rols permesos.
+// Rep l’estat de sessió, els rols permesos i si cal verificar el correu.
+// Retorna un booleà; aquest resultat ajuda la pantalla, però no substitueix el servidor.
 export function comprobarPermiso(estado: EstadoSesion, roles: readonly Rol[], correoObligatorio = true): boolean {
     if (estado.estado !== "autenticado" || !estado.usuario) {
         return false;
     }
+    // En les àrees de negoci, tenir correu i contrasenya no és suficient: cal haver verificat el correu.
     if (correoObligatorio && !estado.usuario.correoVerificado) {
         return false;
     }
     return roles.includes(estado.usuario.rol);
 }
 // Mostrar el contingut de la pàgina després de comprovar l’accés.
+// No rep paràmetres: treballa amb el document que tenim obert.
+// No retorna dades: retira l’atribut que mantenia ocult el contingut privat.
 export function mostrarPaginaAutorizada(): void {
     document.documentElement.removeAttribute("data-auth-pending");
 }
 // Comprovar la ruta oberta i canviar de pantalla si el compte no hi pot entrar.
+// No rep paràmetres: llegeix la ruta actual i escolta la sessió.
+// No retorna dades: mostra la pàgina autoritzada o redirigeix a una altra ruta.
 export function protegerRutaActual(): void {
+    // Traiem les barres finals perquè /admin i /admin/ es comprovin igual.
     const ruta = window.location.pathname.replace(/\/+$/, "") || "/";
     const roles = PERMISOS_RUTA[ruta];
+    // Les rutes públiques no apareixen al mapa i no necessiten aquesta protecció de pantalla.
     if (!roles) {
         return;
     }
     observarSesion((estado) => {
+        // Amaguem el contingut mentre encara no podem assegurar a quin compte correspon.
         document.documentElement.setAttribute("data-auth-pending", "");
         const aviso = document.getElementById("acceso-msg");
         if (aviso) {
@@ -93,6 +111,7 @@ export function protegerRutaActual(): void {
             return;
         }
         if (!comprobarPermiso(estado, roles, ruta !== "/perfil")) {
+            // replace evita deixar la ruta denegada com una pàgina útil a l’historial del navegador.
             window.location.replace("/?acceso=denegado");
             return;
         }

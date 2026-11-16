@@ -8,9 +8,12 @@ import { validarHorario, cabeEnHorario } from "./horarios.js";
 import { validarZona, obtenerConfiguracionAgenda, actualizarControlAgenda } from "./configuracion.js";
 import { validarFechaCalendario, convertirHoraAMinutos, formatearFechaZona } from "./fechas.js";
 // Comprovar que sigui administrador i guardar els camps del servei.
+// Rep una petició autenticada amb serviceId, nom, durada, preu i active.
+// Retorna ok i l’ID del servei si la transacció s’ha confirmat.
 export const saveService = onCall(async (peticion) => {
     const identidad = await comprobarAdministrador(peticion);
     const datos = peticion.data;
+    // L’ID estable permet repetir un desament sense crear serveis duplicats.
     const id = comprobarUid(datos?.serviceId);
     // Comprovem nom, preu i estat al servidor; no n’hi ha prou amb el formulari.
     if (typeof datos.name !== "string" || !datos.name.trim() || datos.name.trim().length > 100 || typeof datos.price !== "number" || !Number.isFinite(datos.price) || datos.price < 0 || typeof datos.active !== "boolean") {
@@ -21,6 +24,7 @@ export const saveService = onCall(async (peticion) => {
     return baseDatos.runTransaction(async (transaccion) => {
         await comprobarIdentidadTransaccion(transaccion, baseDatos, identidad);
         const referencia = baseDatos.doc("services/" + id);
+        // Llegim també el document del servei perquè un canvi concurrent es detecti dins de la transacció.
         await transaccion.get(referencia);
         // merge conserva els altres camps del document que no estem editant.
         transaccion.set(referencia, {
@@ -30,6 +34,8 @@ export const saveService = onCall(async (peticion) => {
     });
 });
 // Comprovar l’horari nou i que cap cita futura en quedi fora abans de guardar-lo.
+// Rep una petició d’administrador amb timezone i els set days.
+// Retorna ok després de guardar, o un error si el canvi perjudica cites existents.
 export const saveSchedule = onCall(async (peticion) => {
     const identidad = await comprobarAdministrador(peticion);
     const timezone = validarZona(peticion.data?.timezone);
@@ -50,6 +56,7 @@ export const saveSchedule = onCall(async (peticion) => {
             if (cita.status === "cancelled" || cita.status === "done") {
                 continue;
             }
+            // Les cites que ja han començat no impedeixen canviar l’horari de les pròximes jornades.
             if (cita.startAt?.toDate && cita.startAt.toDate() <= new Date()) {
                 continue;
             }
@@ -65,15 +72,19 @@ export const saveSchedule = onCall(async (peticion) => {
             }
         }
         transaccion.set(referencia, {
+            // Desem els camps d’horari i augmentem el mateix control que utilitza la creació de reserves.
             timezone, days, revision: Number(documento.get("revision") || 0) + 1
         }, { merge: true });
         return { ok: true };
     });
 });
 // Tancar o reobrir una data completa, sense deixar cites actives en un dia tancat.
+// Rep una petició d’administrador amb dateStr i closed.
+// Retorna ok quan s’ha creat o retirat el tancament dins la transacció.
 export const setClosedDay = onCall(async (peticion) => {
     const identidad = await comprobarAdministrador(peticion);
     const fecha = validarFechaCalendario(peticion.data?.dateStr);
+    // closed ha de ser un booleà real; un text com false no es tracta com una casella desmarcada.
     if (typeof peticion.data?.closed !== "boolean") {
         throw new HttpsError("invalid-argument", "Indica si el dia està tancat.");
     }
@@ -85,6 +96,7 @@ export const setClosedDay = onCall(async (peticion) => {
         if (peticion.data.closed) {
             const citas = await transaccion.get(baseDatos.collection("bookings").where("dateStr", "==", fecha));
             for (const cita of citas.docs) {
+                // Abans de tancar cal resoldre totes les cites que encara ocupen una reserva pendent de prestar.
                 if (cita.get("status") !== "cancelled" && cita.get("status") !== "done") {
                     throw new HttpsError("failed-precondition", "Resol les cites d’aquest dia abans de tancar-lo.");
                 }
@@ -95,6 +107,7 @@ export const setClosedDay = onCall(async (peticion) => {
             transaccion.set(referencia, { dateStr: fecha });
         }
         else {
+            // Reobrir una data treu el seu tancament; no modifica l’horari setmanal ni les cites.
             transaccion.delete(referencia);
         }
         // Avisem que l’agenda ha canviat perquè una reserva simultània ho torni a comprovar.

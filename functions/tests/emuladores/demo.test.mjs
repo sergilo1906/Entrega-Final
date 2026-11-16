@@ -30,6 +30,7 @@ test("demo catalana: doce citas coherentes, doce cuentas locales, aislamiento y 
         const cuentas = JSON.parse(fs.readFileSync(archivoAccesos, "utf8")).cuentas;
         assert.equal(cuentas.filter(c => c.rol === "client").length, 6);
         assert.equal(cuentas.filter(c => c.rol === "admin").length, 6);
+        // Comprovem que les dotze contrasenyes locals siguin diferents, sense imprimir-ne els valors.
         assert.equal(new Set(cuentas.map(c => c.password)).size, 12);
         const configuracion = (await baseDatos.doc("config/app").get()).data();
         assert.equal(configuracion.professionalName, "Marc Vidal");
@@ -59,6 +60,7 @@ test("demo catalana: doce citas coherentes, doce cuentas locales, aislamiento y 
             }
             for (const clave of cita.lockKeys) {
                 const lock = await baseDatos.doc("bookingLocks/" + clave).get();
+                // Per a una cancel·lada esperem que la marca d’ocupació ja no existeixi.
                 if (cita.status === "cancelled") {
                     assert.equal(lock.exists, false);
                 }
@@ -90,6 +92,7 @@ test("demo catalana: doce citas coherentes, doce cuentas locales, aislamiento y 
             assert.equal(propias.size, 2);
             assert.equal(propias.docs.every(d => d.get("userName") === cliente.nombre), true);
             const ajena = filas.find(f => f.get("userId") !== uid);
+            // La prova consulta una cita aliena amb el SDK del client perquè les regles n’hagin de denegar la lectura.
             await assert.rejects(getDoc(doc(datos, "bookings", ajena.id)));
             const cancelada = filas.find(f => f.get("userId") === uid && f.get("status") === "cancelled");
             if (cancelada) {

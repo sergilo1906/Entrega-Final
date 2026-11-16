@@ -10,11 +10,13 @@ const tipos = {
 };
 createServer(async (peticion, respuesta) => {
     try {
+        // Aquest servidor només llegeix pàgines; no accepta operacions que pretenguin modificar fitxers.
         if (!["GET", "HEAD"].includes(peticion.method)) {
             respuesta.writeHead(405).end();
             return;
         }
         const url = new URL(peticion.url || "/", "http://127.0.0.1");
+        // Decodifiquem la ruta abans de comprovar que es mantingui dins el directori públic.
         const ruta = decodeURIComponent(url.pathname);
         let archivo = path.resolve(publico, "." + ruta);
         const relativa = path.relative(publico, archivo);
@@ -40,9 +42,11 @@ createServer(async (peticion, respuesta) => {
         }
         const contenido = await readFile(archivo);
         respuesta.setHeader("Content-Type", tipos[path.extname(archivo)] || "application/octet-stream");
+        // No guardem respostes en memòria cau perquè les proves sempre llegeixin el build actual.
         respuesta.setHeader("Cache-Control", "no-store");
         respuesta.setHeader("X-Content-Type-Options", "nosniff");
         respuesta.statusCode = estado;
+        // HEAD retorna les capçaleres sense el cos del fitxer, mentre GET retorna el contingut complet.
         respuesta.end(peticion.method === "HEAD" ? undefined : contenido);
     }
     catch {

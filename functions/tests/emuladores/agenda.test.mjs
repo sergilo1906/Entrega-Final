@@ -22,6 +22,8 @@ after(async () => {
     }
 });
 // Preparar servei i data per consultar hores a les proves.
+// No rep paràmetres: prepara el servei i la data del cas de prova.
+// Retorna l’objecte que enviarem a getAvailability als emuladors.
 const disponibilidad = () => ({ serviceId: "corte", dateStr: fechaPrueba() });
 // En aquests casos, que la petició falli és el resultat correcte: no ha de tenir permís.
 test("invitado, correo sin verificar y roles retirados no operan", async () => {
@@ -69,10 +71,12 @@ test("30 minutos y 60 minutos bloquean toda su duracion", async () => {
 test("cancelar libera el hueco, conserva idempotencia y no permite acceso ajeno", async () => {
     const datos = solicitud();
     const cita = await cliente.llamar("createBooking", datos);
+    // Un segon client no ha de poder cancel·lar la cita del primer, encara que en conegui l’ID.
     await assert.rejects(otro.llamar("cancelBooking", { bookingId: cita.bookingId }));
     await assert.rejects(getDoc(doc(otro.datos, "bookings/" + cita.bookingId)));
     await cliente.llamar("cancelBooking", { bookingId: cita.bookingId });
     await cliente.llamar("cancelBooking", { bookingId: cita.bookingId });
+    // Després de cancel·lar comprovem les marques reals de Firestore, no només la resposta de la funció.
     assert.equal((await baseDatos.collection("bookingLocks").get()).size, 0);
     assert.equal((await cliente.llamar("createBooking", datos)).status, "cancelled");
     assert.equal((await cliente.llamar("getAvailability", disponibilidad())).slots.some(h => h.timeStr === "09:00"), true);
@@ -81,6 +85,7 @@ test("cancelar libera el hueco, conserva idempotencia y no permite acceso ajeno"
 test("dos clientes simultaneos: solo una reserva incompatible de 30/60 tiene exito", async () => {
     // Enviem les dues reserves alhora; només una pot ocupar l’interval compartit.
     const resultados = await Promise.allSettled([cliente.llamar("createBooking", solicitud({ serviceId: "completo", timeStr: "09:00" })), otro.llamar("createBooking", solicitud({ timeStr: "09:30" }))]);
+    // Dues reserves incompatibles no poden tenir èxit alhora; el recompte correcte és una sola.
     assert.equal(resultados.filter(r => r.status === "fulfilled").length, 1);
     assert.equal((await baseDatos.collection("bookings").get()).size, 1);
 });
@@ -88,6 +93,7 @@ test("reintentos simultaneos de una solicitud no duplican cita ni locks", async 
     const datos = solicitud();
     // En aquest cas les dues peticions són la mateixa intenció i han de retornar la mateixa cita.
     const resultados = await Promise.all([cliente.llamar("createBooking", datos), cliente.llamar("createBooking", datos)]);
+    // Dues peticions iguals de la mateixa intenció han de recuperar el mateix document.
     assert.equal(resultados[0].bookingId, resultados[1].bookingId);
     assert.equal((await baseDatos.collection("bookingLocks").get()).size, 1);
 });
@@ -108,6 +114,7 @@ test("cerrar un dia y crear una cita a la vez nunca producen un cierre con cita"
     await Promise.allSettled([admin.llamar("setClosedDay", { dateStr: fechaPrueba(), closed: true }), cliente.llamar("createBooking", solicitud())]);
     const cerrado = (await baseDatos.doc("closedDays/" + fechaPrueba()).get()).exists;
     const citas = (await baseDatos.collection("bookings").get()).size;
+    // La cursa no pot acabar amb una cita activa dins d’un dia que s’ha tancat.
     assert.equal(cerrado && citas > 0, false);
     assert.equal(cerrado || citas === 1, true);
 });

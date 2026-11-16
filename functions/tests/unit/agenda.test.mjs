@@ -6,6 +6,8 @@ import { calcularHorasLibres, validarDuracion } from "../../src/disponibilidad.j
 import { validarFechaCalendario, obtenerIntervaloUtc } from "../../src/fechas.js";
 import { normalizarRolEntrada, ROLES } from "../../src/permisos.js";
 // Crear un horari petit amb dues franges per comprovar el càlcul d’hores.
+// No rep paràmetres: crea un exemple petit d’horari per als càlculs purs.
+// Retorna set dies amb dues franges que permeten provar el buit i la pausa.
 const days = () => Array.from({ length: 7 }, () => ({ active: true, ranges: [{ start: "09:00", end: "11:00" }, { start: "12:00", end: "13:00" }] }));
 test("solo dos roles; ningun rol historico se convierte en administrador", () => {
     assert.deepEqual(ROLES, ["client", "admin"]);

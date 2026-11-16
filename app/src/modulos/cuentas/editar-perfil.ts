@@ -21,16 +21,22 @@ let perfilEditado = false;
 let ultimoUid = "";
 let revisionIdentidad = 0;
 // Comprovar que no hem canviat de compte mentre esperàvem una resposta.
+// Rep el UID i el número de revisió que teníem abans d’esperar la xarxa.
+// Retorna true només si la resposta encara correspon al mateix compte i revisió.
 function mismaIdentidad(uid: string, revision: number): boolean {
     return revision === revisionIdentidad && obtenerUsuarioActual().usuario?.uid === uid;
 }
 // Posar el text al missatge del perfil.
+// Rep el text que volem escriure a l’avís del perfil.
+// No retorna dades: posa el missatge amb textContent si existeix el contenidor.
 function mostrarMensaje(texto: string): void {
     if (mensaje) {
         mensaje.textContent = texto;
     }
 }
 // Mostrar si el correu està verificat i si cal el botó de reenviar.
+// Rep un booleà que indica si el correu ja està verificat.
+// No retorna dades: actualitza la insígnia i amaga o mostra el botó de reenviar.
 function mostrarEstadoVerificacion(verificado: boolean): void {
     if (!verificacion) {
         return;
@@ -40,6 +46,7 @@ function mostrarEstadoVerificacion(verificado: boolean): void {
         + (verificado ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-800");
     reenviar?.classList.toggle("hidden", verificado);
 }
+// Qualsevol edició del contacte marca el formulari com a modificat abans que arribi un possible canvi del perfil.
 nombre?.addEventListener("input", () => {
     perfilEditado = true;
 });
@@ -79,6 +86,7 @@ observarSesion((estado) => {
         document.getElementById("toast-root")?.remove();
         return;
     }
+    // Quan entra un compte diferent no conservem les dades editades ni els botons ocupats del compte anterior.
     if (ultimoUid !== usuario.uid) {
         revisionIdentidad++;
         mostrarMensaje("");
@@ -108,6 +116,7 @@ observarSesion((estado) => {
         }
     }
     ultimoUid = usuario.uid;
+    // Si ha fallat la lectura no omplim camps amb dades d’un altre usuari ni anunciem que estiguin guardats.
     if (estado.errorPerfil) {
         mostrarMensaje("No s’han pogut carregar les dades. Revisa la connexió abans de desar.");
     }
@@ -125,6 +134,7 @@ guardar?.addEventListener("click", async () => {
     if (estado.estado !== "autenticado" || !usuario) {
         return;
     }
+    // Apliquem els mateixos límits que utilitzem quan es crea el contacte.
     const errorValidacion = comprobarContacto(nombre.value, telefono.value);
     if (errorValidacion) {
         mostrarMensaje(errorValidacion);
@@ -134,10 +144,12 @@ guardar?.addEventListener("click", async () => {
     guardar.disabled = true;
     // Guardem el compte i la revisió d’aquest enviament per no mostrar el resultat en una altra sessió.
     const revision = revisionIdentidad;
+    // Copiem els valors d’aquest enviament perquè no canviïn si l’usuari escriu mentre esperem la xarxa.
     const nuevoNombre = nombre.value;
     const nuevoTelefono = telefono.value;
     mostrarMensaje("Desant els canvis…");
     try {
+        // Primer assegurem que existeixi el perfil, cosa que també recupera una alta incompleta.
         await crearPerfilUsuario(usuario.uid, usuario.correo, nuevoNombre, nuevoTelefono);
         await esperarEstadoSesion();
         if (!mismaIdentidad(usuario.uid, revision)) {
@@ -147,6 +159,7 @@ guardar?.addEventListener("click", async () => {
         await guardarPerfilUsuario(usuario.uid, nuevoNombre, nuevoTelefono);
         await esperarEstadoSesion();
         if (mismaIdentidad(usuario.uid, revision)) {
+            // Si s’han fet més canvis mentre esperàvem, continuen marcats com a edició pendent.
             perfilEditado = nombre.value !== nuevoNombre || telefono.value !== nuevoTelefono;
             mostrarMensaje("Canvis desats.");
             mostrarAviso("Perfil desat.", "success");
@@ -158,6 +171,7 @@ guardar?.addEventListener("click", async () => {
         }
     }
     finally {
+        // El resultat d’un compte anterior no ha de reactivar els botons d’una altra sessió.
         if (revision === revisionIdentidad) {
             guardando = false;
             guardar.disabled = false;
@@ -175,6 +189,7 @@ reenviar?.addEventListener("click", async () => {
     }
     // Guardem el compte i la revisió d’aquest enviament per no mostrar el resultat en una altra sessió.
     const revision = revisionIdentidad;
+    // Desactivem temporalment el reenviament per no demanar diversos correus amb clics seguits.
     reenviar.disabled = true;
     mostrarMensaje("Enviant el correu de verificació…");
     try {
@@ -190,6 +205,7 @@ reenviar?.addEventListener("click", async () => {
         }
     }
     finally {
+        // El resultat d’un compte anterior no ha de reactivar els botons d’una altra sessió.
         if (revision === revisionIdentidad) {
             reenviar.disabled = false;
         }
@@ -201,6 +217,7 @@ salir?.addEventListener("click", async () => {
         return;
     }
     cerrando = true;
+    // El botó de sortir també queda protegit davant un segon clic durant la petició.
     salir.disabled = true;
     try {
         await cerrarSesion();

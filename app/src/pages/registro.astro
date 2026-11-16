@@ -17,6 +17,7 @@ import DisenoPrincipal from "../layouts/DisenoPrincipal.astro";
 
       <div>
         <label for="reg-phone" class="block text-xs text-gray-600 mb-1">Telèfon</label>
+        <!-- El telèfon és opcional: no porta required, però el codi comprova la longitud si s’omple. -->
         <input id="reg-phone" name="phone" type="tel" autocomplete="tel" class="w-full border rounded px-3 py-2" placeholder="Opcional" />
       </div>
 
@@ -32,6 +33,7 @@ import DisenoPrincipal from "../layouts/DisenoPrincipal.astro";
 
       <div>
         <label for="reg-password2" class="block text-xs text-gray-600 mb-1">Repeteix la contrasenya</label>
+        <!-- Aquest segon camp és per comparar les dues contrasenyes; no es guarda com una altra dada del compte. -->
         <input id="reg-password2" name="password2" type="password" autocomplete="new-password" minlength="6" required class="w-full border rounded px-3 py-2" />
       </div>
 
@@ -39,6 +41,7 @@ import DisenoPrincipal from "../layouts/DisenoPrincipal.astro";
         Crea un compte
       </button>
 
+      <!-- El missatge permet distingir una validació incorrecta d’un problema quan Firebase crea el compte. -->
       <p id="reg-msg" role="status" aria-live="polite" class="text-xs text-gray-600 min-h-[1.5rem] leading-tight"></p>
 
       <p class="text-xs text-center text-gray-600">

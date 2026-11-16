@@ -15,10 +15,12 @@ import DisenoPrincipal from "../layouts/DisenoPrincipal.astro";
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-gray-600">
           <label class="flex items-center gap-2">
             <span>Data</span>
+            <!-- Canviar aquesta data fa una consulta nova perquè l’administrador vegi la jornada seleccionada. -->
             <input id="agenda-date" type="date" class="border rounded px-2 py-1 text-sm" />
           </label>
           <label class="flex items-center gap-2">
             <span>Estat</span>
+            <!-- El filtre d’estat presenta les cites llegides d’aquell dia; no canvia els seus estats. -->
             <select id="agenda-status" class="border rounded px-2 py-1 text-sm">
               <option value="all">Totes</option>
               <option value="confirmed">Confirmada</option>

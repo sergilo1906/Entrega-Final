@@ -8,6 +8,7 @@ const mensaje = document.getElementById("login-msg");
 // Aquesta variable evita enviar el login una altra vegada mentre encara esperem.
 let solicitudEnCurso = false;
 observarSesion((estado) => {
+    // No canviem el formulari si falta un element o si el seu enviament ja està en curs.
     if (!formulario || !mensaje || solicitudEnCurso) {
         return;
     }
@@ -18,15 +19,18 @@ observarSesion((estado) => {
     else if (estado.mensaje) {
         mensaje.textContent = estado.mensaje;
     }
+    // Aquest indicador permet explicar el resultat d’un correu verificat quan arribem al login sense sessió.
     else if (new URLSearchParams(location.search).get("verified") === "1") {
         mensaje.textContent = "Correu verificat. Ja pots iniciar sessió.";
     }
 });
 formulario?.addEventListener("submit", async (evento) => {
     evento.preventDefault();
+    // No canviem el formulari si falta un element o si el seu enviament ja està en curs.
     if (!formulario || !mensaje || solicitudEnCurso) {
         return;
     }
+    // Recollim els valors pels name dels inputs; no enviem dades d’altres elements de la pàgina.
     const campos = new FormData(formulario);
     const correo = String(campos.get("email") || "").trim();
     const contrasena = String(campos.get("password") || "");
@@ -42,6 +46,7 @@ formulario?.addEventListener("submit", async (evento) => {
         // Esperem que Firebase comprovi les credencials; després mirem els permisos.
         await iniciarSesion(correo, contrasena);
         const estado = await esperarEstadoSesion();
+        // Entrar no és suficient si després no podem confirmar la sessió; tractem aquesta situació com un error.
         if (!estado.usuario) {
             throw new Error("No s’ha pogut comprovar la sessió.");
         }
@@ -49,6 +54,7 @@ formulario?.addEventListener("submit", async (evento) => {
     }
     catch (error) {
         mensaje.textContent = explicarErrorAcceso(error);
+        // En un error deixem corregir els camps i tornar a enviar el mateix formulari.
         solicitudEnCurso = false;
         bloquearFormulario(formulario, false);
     }

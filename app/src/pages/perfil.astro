@@ -16,6 +16,7 @@ import DisenoPrincipal from "../layouts/DisenoPrincipal.astro";
         <strong>Estat del correu:</strong>{" "}
         <span id="perfil-verif" class="inline-block rounded px-2 py-0.5 text-xs font-medium"></span>
       </p>
+      <!-- Aquest botó només es mostra si encara falta verificar el correu. -->
       <button id="perfil-send-verify" class="text-xs underline text-blue-600 hidden" type="button">Torna a enviar la verificació</button>
       <p class="text-xs text-gray-500">Tipus de compte: <span id="perfil-role" class="font-medium"></span></p>
     </div>
@@ -28,6 +29,7 @@ import DisenoPrincipal from "../layouts/DisenoPrincipal.astro";
 
       <label class="space-y-1">
         <span class="block text-xs text-gray-600">Telèfon</span>
+        <!-- maxLength ajuda al formulari; la mateixa limitació també es comprova al codi i a les regles. -->
         <input id="perfil-phone" type="tel" autocomplete="tel" maxlength="30" class="w-full border rounded px-3 py-2 text-sm" placeholder="Opcional" />
       </label>
     </div>

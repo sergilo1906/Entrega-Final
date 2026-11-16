@@ -14,9 +14,11 @@ import DisenoPrincipal from "../layouts/DisenoPrincipal.astro";
       </div>
       <div class="grid gap-3 sm:grid-cols-2">
         <label class="text-xs text-gray-600">Data
+          <!-- La data filtra la llista pròpia; deixar-la buida permet tornar a veure totes les cites pròpies. -->
           <input id="filter-date" type="date" class="mt-1 w-full rounded border px-2 py-2 text-sm" />
         </label>
         <label class="text-xs text-gray-600">Estat
+          <!-- Els value conserven els estats de Firebase encara que les etiquetes visibles estiguin en català. -->
           <select id="filter-status" class="mt-1 w-full rounded border px-2 py-2 text-sm">
             <option value="all">Totes</option>
             <option value="confirmed">Confirmada</option>
@@ -25,6 +27,7 @@ import DisenoPrincipal from "../layouts/DisenoPrincipal.astro";
           </select>
         </label>
       </div>
+      <!-- Aquí es mostra tant l’espera de càrrega com el resultat buit dels filtres. -->
       <p id="my-msg" role="status" aria-live="polite" class="text-xs text-gray-600 min-h-[1.5rem] leading-tight"></p>
       <!-- El mòdul afegeix només les cites que pot consultar el compte actual. -->
       <div id="my-list" class="divide-y divide-gray-200 text-sm rounded border border-gray-200"></div>

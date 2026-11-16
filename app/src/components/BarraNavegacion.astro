@@ -2,6 +2,7 @@
 // Preparem els enllaços del menú. El mòdul de navegació decideix quins es veuen segons la sessió.
 import type { Rol } from "../modelos/cuentas";
 
+// Cada enllaç de gestió guarda el seu ID, destinació, text visible i rols que el poden veure.
 interface EnlacePersonal {
   id: string;
   ruta: string;
@@ -9,6 +10,7 @@ interface EnlacePersonal {
   roles: Rol[];
 }
 
+// Recórrer aquesta llista genera els enllaços sense haver de repetir la mateixa plantilla a mà.
 const enlacesPersonal: EnlacePersonal[] = [
   { id: "link-agenda", ruta: "/agenda", texto: "Agenda", roles: ["admin"] },
   { id: "link-setup", ruta: "/horarios", texto: "Horari", roles: ["admin"] },
@@ -24,6 +26,7 @@ const enlacesPersonal: EnlacePersonal[] = [
       <a href="/" class="font-semibold text-blue-600">BarberPro Studio</a>
       <a id="link-reservar" href="/reservar" class="text-gray-700 hover:text-black">Reserva</a>
       <a id="link-citas" href="/mis-citas" class="text-gray-700 hover:text-black hidden">Les meves cites</a>
+      <!-- Cada element porta data-roles, que el mòdul llegeix per adaptar la visibilitat del menú. -->
       {
         enlacesPersonal.map((enlace) => (
           <a id={enlace.id} href={enlace.ruta} data-roles={enlace.roles.join(" ")} class="text-gray-700 hover:text-black hidden">
@@ -33,10 +36,12 @@ const enlacesPersonal: EnlacePersonal[] = [
       }
     </div>
     <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
+      <!-- L’avatar mostrarà una inicial del compte quan la sessió estigui carregada. -->
       <a id="user-avatar" href="/perfil" class="hidden w-8 h-8 rounded-full bg-gray-800 text-white text-xs font-medium flex items-center justify-center select-none" aria-label="Perfil">U</a>
       <a id="btn-login" href="/login" class="text-gray-700 hover:text-black">Inicia sessió</a>
       <a id="btn-register" href="/registro" class="text-gray-700 hover:text-black">Crea un compte</a>
       <a id="btn-profile" href="/perfil" class="text-gray-700 hover:text-black hidden">El meu compte</a>
+      <!-- El botó comença amagat i el seu esdeveniment el prepara el mòdul de navegació. -->
       <button id="btn-logout" type="button" disabled class="text-white bg-red-600 hover:bg-red-700 rounded px-2 py-1 text-xs font-medium hidden">Surt</button>
     </div>
   </div>

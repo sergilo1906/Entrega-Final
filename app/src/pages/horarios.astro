@@ -7,10 +7,12 @@ const dias = ["Diumenge", "Dilluns", "Dimarts", "Dimecres", "Dijous", "Divendres
   <section class="bg-white border rounded-lg p-4 max-w-4xl mx-auto space-y-4">
     <h1 class="text-2xl font-semibold">Horari habitual i dies tancats</h1>
     <p class="text-sm text-gray-600">Es repeteix cada setmana. Fins a dues franges per dia, en intervals de 30 minuts. Deixa la segona franja buida si no la necessites.</p>
+    <!-- Aquest formulari guarda el conjunt complet de dies i la zona horària en una sola petició. -->
     <form id="schedule-form" class="space-y-4">
       <label class="block">Zona horària<input id="schedule-zone" value="Europe/Madrid" required class="w-full border rounded px-3 py-2" /></label>
       <div class="grid gap-3 sm:grid-cols-2">
         <!-- Recorrem la llista de dies per crear els mateixos camps sense repetir set vegades la plantilla. -->
+        <!-- data-day relaciona cada fila amb la posició del dia dins la configuració de set dies. -->
         {dias.map((dia, indice) => (
           <fieldset data-day={indice} class="border rounded p-3 space-y-2">
             <legend>{dia}</legend>
@@ -27,6 +29,7 @@ const dias = ["Diumenge", "Dilluns", "Dimarts", "Dimecres", "Dijous", "Divendres
       <button type="submit" class="bg-blue-600 text-white rounded px-4 py-2">Desa l’horari</button>
     </form>
     <p id="hours-msg" role="status" class="text-sm text-gray-600"></p>
+    <!-- És una operació separada de l’horari habitual: afecta una data completa, no totes les setmanes. -->
     <form id="closed-form" class="space-y-3 border-t pt-4">
       <h2 class="font-semibold">Tanca o torna a obrir una data completa</h2>
       <label class="block">Data<input id="closed-date" type="date" required class="w-full border rounded px-3 py-2" /></label>
@@ -34,6 +37,7 @@ const dias = ["Diumenge", "Dilluns", "Dimarts", "Dimecres", "Dijous", "Divendres
       <button type="submit" class="border rounded px-4 py-2">Aplica-ho a aquesta data</button>
     </form>
     <p id="closed-msg" role="status" class="text-sm text-gray-600"></p>
+    <!-- La llista s’actualitza llegint els tancaments guardats després de confirmar el canvi. -->
     <ul id="closed-list" class="text-sm list-disc pl-5"></ul>
   </section>
   <script>import "../modulos/administracion/resumen-horarios";</script>

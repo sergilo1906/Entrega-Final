@@ -3,21 +3,26 @@
 import BarraNavegacion from "../components/BarraNavegacion.astro";
 import "../styles/tailwind.css";
 
+// Aquestes propietats les envia cada pàgina quan utilitza el disseny compartit.
 interface Props {
   title?: string;
   noindex?: boolean;
 }
 
+// Agafem les propietats rebudes; si no hi ha títol o noindex, fem servir els valors per defecte.
 const { title: titulo = "BarberPro Studio", noindex: noIndex = false } = Astro.props;
 const rutasPublicas = ["/", "/404", "/ayuda", "/legal", "/login", "/registro", "/verify"];
 const ruta = Astro.url.pathname.replace(/\/+$/, "") || "/";
+// La negació ! indica que necessitem sessió quan la ruta no és dins la llista pública.
 const requiereSesion = !rutasPublicas.includes(ruta);
 // En WEB no autoritzem connexions als emuladors locals.
 const connexionsLocals = import.meta.env.PUBLIC_FIREBASE_MODE === "local"
   ? "http://127.0.0.1:9099 http://127.0.0.1:8088 http://127.0.0.1:5001 ws://127.0.0.1:* ws://localhost:*" : "";
+// La política limita scripts, imatges i connexions; canvia els permisos de connexió local segons el mode de compilació.
 const politicaContingut = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://www.google.com/images/cleardot.gif; connect-src 'self' " + connexionsLocals + " https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com https://*.cloudfunctions.net; frame-src 'none'";
 ---
 
+<!-- lang indica l’idioma del document; data-auth-pending manté el contingut ocult mentre es resol l’accés. -->
 <html lang="ca" class="scroll-smooth" data-auth-pending={requiereSesion ? "" : undefined}>
   <head>
     <meta charset="utf-8" />
@@ -25,13 +30,16 @@ const politicaContingut = "default-src 'self'; script-src 'self'; style-src 'sel
     <!-- Limitem des d’on es poden carregar recursos i a quins serveis es pot connectar la pàgina. -->
     <meta http-equiv="Content-Security-Policy" content={politicaContingut} />
     <title>{titulo} - BarberPro Studio</title>
+    <!-- noindex és una indicació per als cercadors, no una mesura que concedeixi o denegui permisos. -->
     {noIndex && <meta name="robots" content="noindex, nofollow" />}
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="preconnect" href="https://fonts.gstatic.com" />
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
   </head>
   <body class="min-h-screen flex flex-col bg-gray-100 text-gray-900" style="font-family: Manrope, sans-serif;">
+    <!-- El mateix component de navegació apareix a totes les pàgines d’aquest disseny. -->
     <BarraNavegacion />
+    <!-- Aquest avís és fora del contingut privat perquè es pugui explicar un error d’accés. -->
     <p id="acceso-msg" role="status" hidden class="max-w-6xl mx-auto px-4 py-3 text-sm text-gray-600"></p>
     <main class="flex-1 w-full max-w-6xl mx-auto px-4 py-6 md:py-10 space-y-6 transition-opacity duration-150">
       <!-- Aquí Astro posa el contingut de la pàgina que fa servir aquest disseny. -->

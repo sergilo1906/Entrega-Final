@@ -8,6 +8,8 @@ import { obtenerEtiquetaEstadoCliente } from "../../comun/estados-cita";
 import { explicarErrorAdministracion } from "../../comun/errores";
 import type { Cita } from "../../modelos/agenda";
 // Preparar el mateix llistat per a un client o per a l’administrador.
+// Rep true per a l’agenda admin o false per a les cites pròpies.
+// No retorna dades: prepara filtres, botons i consultes que reutilitzen el mateix llistat.
 export function iniciarListado(administrador: boolean): void {
     const lista = document.getElementById(administrador ? "agenda-list" : "my-list")!;
     const mensaje = document.getElementById(administrador ? "agenda-msg" : "my-msg")!;
@@ -16,10 +18,13 @@ export function iniciarListado(administrador: boolean): void {
     let contexto: ContextoAutorizado | null = null;
     let zona = "Europe/Madrid";
     let revision = 0;
+    // Conservem la llista llegida per poder aplicar filtres sense canviar les dades guardades.
     let citas: Cita[] = [];
     let procesando = false;
     fecha.disabled = true;
     // Aplicar els filtres i crear les targetes amb els botons permesos.
+    // No rep paràmetres: fa servir les cites i els filtres que tenim al mòdul.
+    // No retorna dades: buida el llistat anterior i crea les targetes visibles.
     function pintar() {
         lista.replaceChildren();
         // Ens quedem només les cites que coincideixen amb la data i l’estat triats.
@@ -28,11 +33,13 @@ export function iniciarListado(administrador: boolean): void {
         for (const cita of visibles) {
             const tarjeta = document.createElement("article");
             tarjeta.className = "p-3 space-y-2";
+            // La targeta queda associada al document exacte; així el botó actua sobre aquella cita.
             tarjeta.dataset.bookingId = cita.id;
             const titulo = document.createElement("h3");
             titulo.className = "font-semibold";
             titulo.textContent = cita.dateStr + " · " + cita.timeStr + " · " + (cita.serviceSnapshot?.name || "Servei històric");
             const datos = document.createElement("p");
+            // Mostrem l’estat llegible i el preu i durada que consten a la còpia del servei.
             datos.textContent = obtenerEtiquetaEstadoCliente(cita.status) + " · " + cita.durationMin + " min · " + (cita.serviceSnapshot?.price ?? "—") + " EUR";
             tarjeta.append(titulo, datos);
             // Només l’agenda de l’administrador mostra les dades de contacte de la cita.
@@ -52,11 +59,14 @@ export function iniciarListado(administrador: boolean): void {
                 }
             }
             // Crear un botó de cita que demana confirmació abans d’enviar el canvi.
+            // Rep el text del botó i la funció que farà la petició al servidor.
+            // No retorna dades: afegeix el botó a la targeta de cita actual.
             function accion(texto: string, ejecutar: () => Promise<unknown>) {
                 const boton = document.createElement("button");
                 boton.type = "button";
                 boton.textContent = texto;
                 boton.className = "border rounded px-3 py-2 mr-2";
+                // Mentre un canvi està en curs, les altres accions del llistat també queden desactivades.
                 boton.disabled = procesando;
                 boton.addEventListener("click", async () => {
                     const actual = contexto;
@@ -67,6 +77,7 @@ export function iniciarListado(administrador: boolean): void {
                     procesando = true;
                     pintar();
                     try {
+                        // Primer esperem el canvi real; després tornem a consultar per mostrar l’estat guardat.
                         await ejecutar();
                         if (actual.esVigente()) {
                             await cargar();
@@ -92,8 +103,11 @@ export function iniciarListado(administrador: boolean): void {
         }
     }
     // Llegir les dades actuals i mostrar-les només si seguim amb el mateix compte.
+    // No rep paràmetres: utilitza el compte autoritzat, el mode del llistat i la data actual.
+    // La promesa llegeix les cites i actualitza la pantalla només si la consulta continua vigent.
     async function cargar() {
         const actual = contexto;
+        // Numerem les consultes per no mostrar una data antiga si l’administrador en tria una altra ràpidament.
         const consulta = ++revision;
         if (!actual?.esVigente()) {
             return;
@@ -106,6 +120,7 @@ export function iniciarListado(administrador: boolean): void {
             if (!actual.esVigente() || consulta !== revision) {
                 return;
             }
+            // Substituïm la llista en memòria amb la resposta actual i després la representem.
             citas = resultado;
             pintar();
         }
@@ -124,6 +139,7 @@ export function iniciarListado(administrador: boolean): void {
             pintar();
         }
     });
+    // El filtre d’estat només afecta la presentació; no modifica cap cita.
     estado.addEventListener("change", pintar);
     observarAreaAutorizada(administrador ? ["admin"] : ["client", "admin"], actual => {
         contexto = actual;

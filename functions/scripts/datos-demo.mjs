@@ -11,6 +11,7 @@ import { cargarServicio, cargarOcupacion, calcularHorasLibres } from "../src/dis
 import { crearReserva, cambiarEstado } from "../src/persistencia-reservas.js";
 import { comprobarIdentidadTransaccion } from "../src/permisos.js";
 import { formatearFechaZona, sumarDiasCalendario, obtenerIntervaloUtc, convertirHoraAMinutos, convertirMinutosAHora } from "../src/fechas.js";
+// La marca permet distingir aquests documents ficticis de qualsevol dada que ja existís al projecte.
 export const MARCA_DEMO = "m13-entrega-final";
 // Noms ficticis que es faran servir a la mostra, no dades de clients reals.
 export const CLIENTES = [
@@ -52,29 +53,43 @@ export const SERVICIOS = [
 ];
 const raiz = fileURLToPath(new URL("../../", import.meta.url));
 // Convertir el text en un identificador fix: el mateix text dona el mateix resultat.
+// Rep un text que identifica una intenció o unes dades.
+// Retorna el resum SHA-256 en hexadecimal; no és un xifrat que es pugui desfer.
 const hash = texto => createHash("sha256").update(texto).digest("hex");
 // Preparar l’identificador reservat per a un client de demostració.
+// Rep la clau del nom fictici, per exemple laia-soler.
+// Retorna el UID amb el prefix reservat per als clients d’aquesta mostra.
 export const uidCliente = clave => "m13-demo-client-" + clave;
 // Preparar un identificador fix per no crear dues vegades la mateixa cita de mostra.
+// Rep el UID del client i el tipus de cita de demostració.
+// Retorna sempre el mateix ID per poder repetir la preparació sense duplicats.
 export const idCitaDemo = (uid, tipo) => hash(JSON.stringify([uid, "m13-demo-" + tipo]));
 // Llegir els accessos d’un arxiu privat que ha d’estar fora del projecte.
+// Rep la ruta de l’arxiu privat i el projecte al qual ha de pertànyer.
+// Retorna la ruta i les dades llegides, o una estructura buida si encara no existeix.
 function leerAccesos(archivo, proyecto) {
+    // Convertim la ruta privada a una forma absoluta abans de comprovar que no sigui dins del repositori.
     const destino = path.resolve(archivo);
     if (!path.isAbsolute(archivo) || destino.toLowerCase().startsWith(path.resolve(raiz).toLowerCase() + path.sep)) {
         throw new Error("Las credenciales deben guardarse en una ruta absoluta fuera del proyecto.");
     }
     const datos = fs.existsSync(destino) ? JSON.parse(fs.readFileSync(destino, "utf8")) : { proyecto, cuentas: [] };
+    // Un arxiu d’accessos d’un altre entorn no s’ha de reutilitzar per completar aquesta mostra.
     if (datos.proyecto !== proyecto || !Array.isArray(datos.cuentas)) {
         throw new Error("El archivo de accesos pertenece a otro entorno.");
     }
     return { destino, datos };
 }
 // Guardar els accessos al seu arxiu privat, mai a Git ni als missatges de consola.
+// Rep la ruta validada i les dades privades dels comptes de mostra.
+// No retorna dades: crea el directori necessari i guarda l’arxiu fora del repositori.
 function guardarAccesos(accesos) {
     fs.mkdirSync(path.dirname(accesos.destino), { recursive: true });
     fs.writeFileSync(accesos.destino, JSON.stringify(accesos.datos, null, 2) + "\n", { mode: 0o600 });
 }
 // Crear només el compte fictici que falta i conservar el que ja existeix.
+// Rep la persona fictícia, el rol que li correspon i l’arxiu privat d’accessos.
+// Retorna el compte, el rol i la versió per utilitzar-los en preparar les seves cites.
 async function prepararCuenta(persona, rol, accesos) {
     const { autenticacion, baseDatos } = obtenerServiciosAdministrativos();
     const uid = rol === "client" ? uidCliente(persona.clave) : "m13-demo-admin-" + persona.clave;
@@ -89,10 +104,12 @@ async function prepararCuenta(persona, rol, accesos) {
         }
     }
     let acceso = accesos.datos.cuentas.find(fila => fila.uid === uid);
+    // Si el UID ja pertany a una altra identitat o rol, parem en lloc de modificar aquell compte.
     if (cuenta && (cuenta.email !== email || (cuenta.customClaims?.role || "client") !== rol)) {
         throw new Error("Conflicto con una cuenta existente. No se cambia su identidad ni su rol.");
     }
     if (!acceso) {
+        // Si falta la contrasenya privada d’un compte existent, no la restablim automàticament.
         if (cuenta) {
             throw new Error("Falta el archivo privado de acceso de una cuenta existente; no se restablece su contraseña.");
         }
@@ -118,6 +135,7 @@ async function prepararCuenta(persona, rol, accesos) {
     if (perfil.exists && (perfil.get("demoTag") !== MARCA_DEMO || perfil.get("role") !== rol || perfil.get("roleVersion") !== version)) {
         throw new Error("El perfil existente no pertenece a esta preparacion demo.");
     }
+    // Creem el perfil demo només si encara no existia, conservant els canvis posteriors de l’avaluador.
     if (!perfil.exists) {
         await referencia.create({
             name: persona.nombre, email, phone: "", role: rol, roleVersion: version, demoTag: MARCA_DEMO
@@ -128,6 +146,8 @@ async function prepararCuenta(persona, rol, accesos) {
     };
 }
 // Preparar serveis i horari de mostra sense substituir l’horari que ja s’està utilitzant.
+// No rep paràmetres: utilitza el catàleg fictici definit en aquest fitxer.
+// La promesa prepara només el que falta i conserva l’horari que ja existia.
 async function prepararCatalogoYHorario() {
     const { baseDatos } = obtenerServiciosAdministrativos();
     const referencia = baseDatos.doc("config/app");
@@ -155,11 +175,14 @@ async function prepararCatalogoYHorario() {
     }
 }
 // Buscar una hora lliure vàlida per a una cita futura o una cita de l’historial.
+// Rep l’ID del servei i si busquem una cita de l’historial passat.
+// Retorna dateStr i timeStr d’un buit vàlid, o un error si no en troba cap.
 async function buscarHueco(serviceId, pasado = false) {
     const { baseDatos } = obtenerServiciosAdministrativos();
     const config = await obtenerConfiguracionAgenda();
     const servicio = await cargarServicio(serviceId);
     const hoy = formatearFechaZona(new Date(), config.timezone).slice(0, 10);
+    // Provem fins a trenta dies de calendari; per a l’historial anem cap enrere en lloc de cap endavant.
     for (let indice = 0; indice <= 29; indice++) {
         const fecha = sumarDiasCalendario(hoy, pasado ? -indice : indice);
         if ((await baseDatos.doc("closedDays/" + fecha).get()).exists) {
@@ -184,9 +207,11 @@ async function buscarHueco(serviceId, pasado = false) {
                 ocupacion.push({ inicio, fin: inicio + cita.durationMin });
             }
         }
+        // Per buscar historial permetem calcular hores passades, però després exigim que la cita ja hagi acabat.
         const ahora = pasado ? new Date("2000-01-01T00:00:00Z") : new Date();
         for (const hora of calcularHorasLibres(config, fecha, servicio.durationMin, ocupacion, ahora)) {
             const intervalo = obtenerIntervaloUtc(fecha, hora, servicio.durationMin, config.timezone);
+            // Una cita marcada done de la mostra ha de tenir el final real en el passat.
             if (!pasado || intervalo.fin < new Date()) {
                 return { dateStr: fecha, timeStr: hora };
             }
@@ -195,6 +220,8 @@ async function buscarHueco(serviceId, pasado = false) {
     throw new Error("No hay huecos validos para preparar la demostracion; revisa horario, cierres y datos antiguos.");
 }
 // Crear una cita de mostra amb les mateixes funcions que utilitza la web.
+// Rep el compte, el servei, el tipus de mostra i si la cita s’ha de cancel·lar.
+// La promesa conserva una cita existent o crea la nova amb les funcions normals de negoci.
 async function prepararCitaFutura(identidad, servicio, tipo, cancelar = false) {
     const { baseDatos } = obtenerServiciosAdministrativos();
     const id = idCitaDemo(identidad.usuario.uid, tipo);
@@ -211,12 +238,16 @@ async function prepararCitaFutura(identidad, servicio, tipo, cancelar = false) {
     await crearReserva(identidad, {
         ...hueco, serviceId: servicio.id, requestId: "m13-demo-" + tipo
     });
+    // Etiquetem la cita creada amb el motor normal per identificar-la al resum de la mostra.
     await referencia.update({ demoTag: MARCA_DEMO });
+    // Algunes cites es creen i es cancel·len amb la funció de negoci per demostrar que alliberen la seva hora.
     if (cancelar) {
         await cambiarEstado(identidad, { bookingId: id }, "cancelled");
     }
 }
 // Crear una cita fictícia ja acabada després de comprovar horari i ocupació.
+// Rep el compte fictici i el servei per a una cita ja acabada.
+// La promesa crea una cita done només si el seu final és anterior al moment actual.
 async function prepararHistorial(identidad, servicio) {
     const { baseDatos } = obtenerServiciosAdministrativos();
     const id = idCitaDemo(identidad.usuario.uid, "historial");
@@ -245,6 +276,7 @@ async function prepararHistorial(identidad, servicio) {
             throw new Error("Historial incompatible con la agenda.");
         }
         const intervalo = obtenerIntervaloUtc(hueco.dateStr, hueco.timeStr, snapshot.durationMin, config.timezone);
+        // L’operador privat pot preparar historial, però no pot presentar una cita futura com si ja hagués acabat.
         if (intervalo.fin >= new Date()) {
             throw new Error("Una cita hecha debe estar en el pasado.");
         }
@@ -270,6 +302,8 @@ async function prepararHistorial(identidad, servicio) {
     });
 }
 // Preparar els comptes, serveis i dotze cites i comprovar el resum final.
+// Rep el mode LOCAL/WEB, un administrador WEB si cal i la ruta privada d’accessos.
+// Retorna el resum de comptes, serveis, dates i estats de les dotze cites de mostra.
 export async function prepararDemostracion({ real = false, adminUid = "", archivoAccesos }) {
     if (!real) {
         comprobarEntornoLocal();
@@ -296,6 +330,7 @@ export async function prepararDemostracion({ real = false, adminUid = "", archiv
         }
     }
     await prepararCatalogoYHorario();
+    // Repartim els serveis entre les sis persones per tenir una agenda de mostra variada.
     const serviciosFuturos = [0, 2, 3, 1, 5, 4];
     for (let indice = 0; indice < identidades.length; indice++) {
         await prepararCitaFutura(identidades[indice], SERVICIOS[serviciosFuturos[indice]], "proxima");
@@ -309,6 +344,7 @@ export async function prepararDemostracion({ real = false, adminUid = "", archiv
         }
     }
     const citas = await baseDatos.collection("bookings").where("demoTag", "==", MARCA_DEMO).get();
+    // Si hi ha una quantitat inesperada de cites, no esborrem dades per forçar el recompte.
     if (citas.size !== 12) {
         throw new Error("La muestra debe contener exactamente doce citas; no se borran registros para corregirla.");
     }
@@ -327,10 +363,13 @@ export async function prepararDemostracion({ real = false, adminUid = "", archiv
     const resumen = {
         proyecto, modo: real ? "WEB" : "LOCAL", clientes: 6, administradoresDemo: real ? 0 : 6, administradorInicial: real ? adminUid : null, profesional: "Marc Vidal", servicios: 6, citas: citas.size, estados, fechas: [...fechas].sort(), citasPorFecha, archivoAccesos: accesos.destino
     };
+    // El resum mostra dates i quantitats, però les contrasenyes continuen només a l’arxiu privat.
     console.log(JSON.stringify(resumen, null, 2));
     return resumen;
 }
 // Afegir dies tancats de mostra una sola vegada, sense tocar dies que després s’han reobert.
+// Rep l’última data de les cites de la mostra.
+// La promesa prepara tancaments una sola vegada i en registra les dates a config/app.
 async function prepararCierres(ultimaFecha) {
     const { baseDatos } = obtenerServiciosAdministrativos();
     await baseDatos.runTransaction(async transaccion => {
@@ -345,6 +384,7 @@ async function prepararCierres(ultimaFecha) {
             const fecha = sumarDiasCalendario(ultimaFecha, dias);
             const cierre = await transaccion.get(baseDatos.doc("closedDays/" + fecha));
             const citas = await transaccion.get(baseDatos.collection("bookings").where("dateStr", "==", fecha));
+            // Només preparem un tancament de mostra si aquell dia no té ja cap tancament ni cites.
             if (!cierre.exists && citas.empty) {
                 fechas.push(fecha);
             }

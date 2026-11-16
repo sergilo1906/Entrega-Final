@@ -14,6 +14,7 @@ export interface ConfiguracionFirebase {
     appId: string;
     appUrl: string;
 }
+// Aquesta variable queda al mòdul i ens permet reutilitzar la mateixa connexió entre funcions de la pàgina.
 let servicios: {
     aplicacionFirebase: FirebaseApp;
     autenticacion: Auth;
@@ -21,6 +22,8 @@ let servicios: {
     funcionesRemotas: Functions;
 } | null = null;
 // Llegir les variables públiques que es van posar en compilar la web.
+// No rep paràmetres: llegeix les variables PUBLIC_ incorporades durant el build.
+// Retorna un objecte de configuració pública, no les credencials privades del servidor.
 export function leerConfiguracionFirebase(): ConfiguracionFirebase {
     return {
         modo: import.meta.env.PUBLIC_FIREBASE_MODE || "desactivado",
@@ -34,12 +37,16 @@ export function leerConfiguracionFirebase(): ConfiguracionFirebase {
     };
 }
 // Comprovar que la configuració correspon al lloc on obrim la web.
+// Rep la configuració llegida i l’origen des d’on hem obert la web.
+// Retorna null si coincideixen o un text que explica per què no són vàlids.
 export function comprobarConfiguracionFirebase(config: ConfiguracionFirebase, origen: string): string | null {
+    // Sense les dades públiques mínimes no intentem connectar amb un projecte a mitges.
     if (!config.apiKey || !config.appId || !config.projectId || !config.authDomain) {
         return "La configuració de Firebase és incompleta.";
     }
     let url: URL;
     try {
+        // URL separa protocol, domini i camí per comparar-los sense fer-ho amb trossos de text.
         url = new URL(origen);
     }
     catch {
@@ -71,6 +78,8 @@ export function comprobarConfiguracionFirebase(config: ConfiguracionFirebase, or
     return null;
 }
 // Crear les connexions amb Firebase una sola vegada i reutilitzar-les.
+// No rep paràmetres: reutilitza la configuració i les connexions del mòdul.
+// Retorna Auth, Firestore i Functions; si el mode està desactivat, retorna null.
 export function obtenerServiciosFirebase() {
     const config = leerConfiguracionFirebase();
     if (config.modo === "desactivado") {
@@ -84,12 +93,15 @@ export function obtenerServiciosFirebase() {
     if (servicios) {
         return servicios;
     }
+    // Posem un nom a l’aplicació per identificar aquestes connexions de Firebase.
     const aplicacionFirebase = initializeApp(config, "barberpro-m13");
     // Provem de conservar la sessió al navegador; si no es pot, la mantenim en memòria.
     const autenticacion = initializeAuth(aplicacionFirebase, { persistence: [indexedDBLocalPersistence, browserLocalPersistence, inMemoryPersistence] });
     const baseDatos = getFirestore(aplicacionFirebase);
+    // Les set funcions del servidor estan a europe-west1; la connexió ha d’utilitzar aquella mateixa regió.
     const funcionesRemotas = getFunctions(aplicacionFirebase, "europe-west1");
     if (config.modo === "local") {
+        // Connectem els tres serveis als ports locals abans de fer-hi cap petició.
         connectAuthEmulator(autenticacion, "http://127.0.0.1:9099", { disableWarnings: true });
         connectFirestoreEmulator(baseDatos, "127.0.0.1", 8088);
         connectFunctionsEmulator(funcionesRemotas, "127.0.0.1", 5001);

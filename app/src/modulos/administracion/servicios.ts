@@ -17,11 +17,14 @@ let contexto: ContextoAutorizado | null = null;
 let nuevoId = crypto.randomUUID();
 let ocupada = false;
 // Enviar el servei, tornar a carregar la llista i avisar si s’ha guardat.
+// Rep el servei nou o editat amb el seu identificador estable.
+// La promesa envia el canvi i recarrega el catàleg; els errors es mostren a la pantalla.
 async function guardar(item: ServicioAdministrable) {
     const actual = contexto;
     if (!actual?.esVigente() || ocupada) {
         return;
     }
+    // Marquem l’operació abans d’esperar la xarxa per aturar un segon clic immediat.
     ocupada = true;
     bloquearFormulario(formulario, true);
     lista.querySelectorAll<HTMLInputElement | HTMLButtonElement>("input, button").forEach(c => {
@@ -29,6 +32,7 @@ async function guardar(item: ServicioAdministrable) {
     });
     mensaje.textContent = "Desant el servei…";
     try {
+        // El servidor comprova permisos i camps; el formulari no escriu serveis directament a Firestore.
         await guardarServicio(item);
         if (!actual.esVigente()) {
             return;
@@ -36,6 +40,7 @@ async function guardar(item: ServicioAdministrable) {
         // Després d’una alta correcta ja podem preparar un ID per al servei següent.
         if (item.id === nuevoId) {
             nuevoId = crypto.randomUUID();
+            // El formulari nou es buida després d’una alta coneguda; en un error es conserva per poder-lo revisar.
             formulario.reset();
         }
         await cargar(actual);
@@ -59,6 +64,8 @@ async function guardar(item: ServicioAdministrable) {
     }
 }
 // Llegir les dades actuals i mostrar-les només si seguim amb el mateix compte.
+// Rep el context de l’administrador que ha demanat el catàleg.
+// La promesa reconstrueix els formularis dels serveis quan la resposta encara és del mateix compte.
 async function cargar(actual: ContextoAutorizado) {
     try {
         const catalogo = await obtenerCatalogoCompleto();
@@ -68,6 +75,7 @@ async function cargar(actual: ContextoAutorizado) {
         lista.replaceChildren();
         // Creem un formulari per a cada servei perquè es puguin editar els seus camps.
         for (const item of catalogo) {
+            // Cada fila té els seus propis controls i el seu propi esdeveniment submit.
             const fila = document.createElement("form");
             fila.className = "border rounded p-3 grid gap-3 sm:grid-cols-2";
             const nombreFila = campo("Nom", item.name, "text");
@@ -82,6 +90,7 @@ async function cargar(actual: ContextoAutorizado) {
             etiqueta.textContent = " Actiu ";
             const activoFila = document.createElement("input");
             activoFila.type = "checkbox";
+            // Utilitzem el valor inicial de la casella perquè el formulari pugui reflectir després l’edició.
             activoFila.defaultChecked = item.active;
             etiqueta.prepend(activoFila);
             fila.append(etiqueta);
@@ -91,11 +100,14 @@ async function cargar(actual: ContextoAutorizado) {
             guardarFila.textContent = "Desa el servei";
             fila.append(guardarFila);
             // Crear una etiqueta i un camp amb el valor del servei que estem editant.
+            // Rep l’etiqueta, el valor inicial i el tipus de camp HTML que volem crear.
+            // Retorna l’input acabat de crear perquè després en puguem llegir el valor editat.
             function campo(texto: string, valor: string, tipo: string) {
                 const etiqueta = document.createElement("label");
                 etiqueta.textContent = texto;
                 const entrada = document.createElement("input");
                 entrada.type = tipo;
+                // El navegador comprova els camps obligatoris abans de l’enviament; el servidor els torna a validar.
                 entrada.required = true;
                 // Posem el valor inicial del servei al camp; l’usuari després el pot canviar.
                 entrada.defaultValue = valor;
@@ -108,6 +120,7 @@ async function cargar(actual: ContextoAutorizado) {
             fila.addEventListener("submit", evento => {
                 evento.preventDefault();
                 void guardar({
+                    // En una edició mantenim l’ID: canviar el nom no ha de crear un altre servei.
                     id: item.id, name: nombreFila.value, durationMin: Number(duracionFila.value), price: Number(precioFila.value), active: activoFila.checked
                 });
             });
@@ -124,6 +137,7 @@ async function cargar(actual: ContextoAutorizado) {
 formulario.addEventListener("submit", evento => {
     evento.preventDefault();
     void guardar({
+        // En una alta utilitzem l’ID preparat al mòdul fins que rebem la confirmació.
         id: nuevoId, name: nombre.value, durationMin: Number(duracion.value), price: Number(precio.value), active: activo.checked
     });
 });

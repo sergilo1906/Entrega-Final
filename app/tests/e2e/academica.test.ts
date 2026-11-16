@@ -7,26 +7,35 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 const raiz = fileURLToPath(new URL("../../../", import.meta.url));
 // Preparar una data de prova a partir del dia actual de la barberia.
+// Rep el nombre de dies de diferència respecte d’avui; per defecte són set.
+// Retorna una data de prova en el calendari de la barberia.
 const fecha = (dias = 7) => {
     const partes = new Intl.DateTimeFormat("en-CA", {
         timeZone: "Europe/Madrid", year: "numeric", month: "2-digit", day: "2-digit"
     }).formatToParts(new Date());
     // Agafar una part de la data per poder formar any, mes i dia.
+    // Rep el nom d’una part de la data, com year o month.
+    // Retorna el text d’aquella part per construir la data de la prova.
     const valor = (tipo: string) => partes.find(p => p.type === tipo)!.value;
     const instante = new Date(valor("year") + "-" + valor("month") + "-" + valor("day") + "T00:00:00Z");
     instante.setUTCDate(instante.getUTCDate() + dias);
     return instante.toISOString().slice(0, 10);
 };
 // Omplir el login de prova i comprovar que arribem a la pantalla correcta.
+// Rep la pàgina del navegador de prova i el nom d’un compte fictici.
+// La promesa acaba quan el login ha portat el compte a la ruta prevista.
 async function entrar(page: Page, cuenta = "client") {
     await page.goto("/login");
     await page.locator("#login-email").fill("demo-" + cuenta + "@example.test");
     await page.locator("#login-password").fill("Prueba123!");
     await page.locator("#login-form button").click();
     await expect(page).toHaveURL(cuenta === "admin" ? /\/admin\/?$/ : /\/reservar\/?$/);
+    // Esperem que s’hagi autoritzat la pantalla abans de començar a utilitzar els seus controls.
     await expect(page.locator("html")).not.toHaveAttribute("data-auth-pending");
 }
 // Fer una reserva des dels formularis de prova i comprovar que es confirma.
+// Rep la pàgina del navegador de prova, dies de diferència, servei i hora.
+// La promesa acaba quan s’ha utilitzat el formulari i s’ha comprovat la confirmació.
 async function reservar(page: Page, dias = 7, servicio = "corte", hora = "09:00") {
     await page.goto("/reservar");
     await expect(page.locator("#service-select option[value='corte']")).toBeAttached();
@@ -67,6 +76,7 @@ test("registro, verificacion real en Auth local y cierre de sesion", async ({ pa
     await page.locator("#reg-form button").click();
     await expect(page).toHaveURL(/\/verify/);
     const respuesta = await request.get("http://127.0.0.1:9099/emulator/v1/projects/demo-barberpro-m13/oobCodes");
+    // El codi surt de l’Auth local de prova; no es marca el compte verificat sense passar pel procés.
     const codigos = (await respuesta.json()).oobCodes;
     const codigo = codigos.find((c: {
         email: string;
@@ -86,9 +96,11 @@ test("cliente reserva, ve solo sus citas, cancela y recupera la hora", async ({ 
     await entrar(page);
     await reservar(page);
     await page.reload();
+    // Esperem que s’hagi autoritzat la pantalla abans de començar a utilitzar els seus controls.
     await expect(page.locator("html")).not.toHaveAttribute("data-auth-pending");
     await page.goto("/mis-citas");
     await expect(page.locator("#my-list")).toContainText("Confirmada");
+    // Acceptem el diàleg de confirmació com faria l’usuari abans de cancel·lar o completar una cita.
     page.once("dialog", dialogo => dialogo.accept());
     await page.getByRole("button", { name: "Cancel·la la cita", exact: true }).click();
     await expect(page.locator("#my-list")).toContainText("Cancel·lada");
@@ -129,6 +141,7 @@ test("admin consulta agenda y completa una reserva de 60 minutos", async ({ page
     await page.goto("/agenda");
     await page.locator("#agenda-date").fill(fecha(8));
     await expect(page.locator("#agenda-list")).toContainText("Confirmada");
+    // Acceptem el diàleg de confirmació com faria l’usuari abans de cancel·lar o completar una cita.
     page.once("dialog", dialogo => dialogo.accept());
     await page.getByRole("button", { name: "Marca com a completada", exact: true }).click();
     await expect(page.locator("#agenda-list")).toContainText("Completada");
@@ -199,6 +212,7 @@ test("doble clic i resposta perduda: recarregar i reintentar conserva una sola c
             // Deixem que el servidor guardi la cita abans de simular que es perd la resposta.
             const resposta = await ruta.fetch();
             expect(resposta.ok()).toBe(true);
+            // La cita ja s’ha guardat al servidor, però ara la pantalla rep una resposta de servei no disponible.
             await ruta.fulfill({ status: 503, json: { error: { status: "UNAVAILABLE", message: "Resposta no disponible" } } });
         } else {
             await ruta.continue();
@@ -219,6 +233,7 @@ test("doble clic i resposta perduda: recarregar i reintentar conserva una sola c
     await expect(page.locator("#date-select")).toBeDisabled();
     await page.locator("#booking-retry").click();
     await expect(page.locator("#booking-summary")).toContainText("Cita confirmada");
+    // Malgrat el doble clic i el reintent, només esperem l’enviament inicial i la repetició de la mateixa intenció.
     expect(peticions).toHaveLength(2);
     // El reintent ha de portar el mateix requestId: no és una reserva nova.
     expect(peticions[0]).toBe(peticions[1]);
@@ -242,6 +257,8 @@ test("la demo catalana se usa desde la interfaz y el administrador ve las doce c
     const resumen = JSON.parse(salida);
     const accesos = JSON.parse(readFileSync(archivoCompartido, "utf8")).cuentas;
     // Entrar a la web amb un compte fictici preparat per la prova.
+    // Rep els accessos privats de mostra i si esperem entrar com a administrador.
+    // La promesa omple el login i comprova la destinació de la sessió.
     async function entrarDemo(cuenta: {
         email: string;
         password: string;
@@ -276,6 +293,7 @@ test("la demo catalana se usa desde la interfaz y el administrador ve las doce c
             ids.add(id);
         }
     }
+    // El Set no repeteix IDs; així comprovem que l’administrador ha vist les dotze cites diferents.
     expect(ids.size).toBe(12);
     await page.screenshot({ path: info.outputPath("agenda-demo.png"), fullPage: true });
 });

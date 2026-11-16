@@ -8,16 +8,20 @@ import DisenoPrincipal from "../layouts/DisenoPrincipal.astro";
 
 <p class="text-sm text-gray-600">Tria un servei, una data i una hora per reservar amb <span id="booking-professional">el nostre professional principal</span>. La cita queda confirmada quan es desa.</p>
 <div class="grid gap-4 sm:grid-cols-2">
+  <!-- Les opcions inicials són temporals; els serveis reals es carreguen després de comprovar el compte. -->
   <label>Servei<select id="service-select" class="w-full border rounded px-3 py-2"><option value="">Carregant els serveis…</option></select></label>
+  <!-- Els límits de data els posa el mòdul utilitzant el calendari i la zona del negoci. -->
   <label>Data<input id="date-select" type="date" class="w-full border rounded px-3 py-2" /></label>
 </div>
 <p class="text-xs text-gray-600">Hores de la zona de la barberia: <span id="booking-zone"></span>. Reserves amb un màxim de 30 dies d’antelació.</p>
 <p id="slots-msg" role="status" aria-live="polite" class="text-sm text-gray-600"></p>
+<!-- El mòdul buida i omple aquest contenidor amb botons d’hores disponibles retornades pel servidor. -->
 <div id="slots-list" class="grid gap-2 sm:grid-cols-3"></div>
 <!-- Aquest resum només es mostra quan coneixem el resultat de la sol·licitud. -->
 <div id="booking-success" class="hidden rounded border border-green-300 bg-green-50 p-3 text-sm">
   <p id="booking-summary"></p><a href="/mis-citas" class="text-blue-700 underline">Consulta les meves cites</a>
 </div>
+<!-- Aquest botó només apareix quan cal recuperar el resultat d’una intenció anterior. -->
 <button id="booking-retry" type="button" hidden class="border rounded px-3 py-2">Reintenta la mateixa sol·licitud</button>
 
 </section>
